@@ -1273,9 +1273,26 @@ async function send(){
   const status = document.createElement("div");
   status.className = "typing"; status.textContent = "思考中…";
   d.appendChild(status);
-  chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
+  chat.appendChild(d);
   const start = Date.now();
   let textStarted = false, finished = false, acc = "", rAcc = "";
+  // —— 滚动跟随: 用户滚上去就不再吸底, 滚回底部自动恢复 ——
+  let pinned = true;
+  chat.addEventListener("scroll", () => {
+    pinned = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 90;
+  }, {passive:true});
+  // —— 批处理刷新: 最多约8次/秒更新DOM, 流式不卡顿 ——
+  let flushTimer = null;
+  function flush(){
+    if(deep && th) th.textContent = rAcc;
+    if(textStarted) body.textContent = acc;
+    if(pinned) chat.scrollTop = chat.scrollHeight;
+  }
+  function scheduleFlush(){
+    if(flushTimer) return;
+    flushTimer = setTimeout(() => { flushTimer = null; flush(); }, 120);
+  }
+  if(pinned) chat.scrollTop = chat.scrollHeight;
   const timer = setInterval(() => {
     if(!finished && !textStarted){
       const sec = Math.round((Date.now()-start)/1000);
@@ -1310,11 +1327,11 @@ async function send(){
         let obj; try{ obj = JSON.parse(line.slice(6)); }catch(err){ continue; }
         if(obj.kind === "thinking"){
           rAcc += obj.delta;
-          if(deep && th) th.textContent = rAcc;
+          scheduleFlush();
         } else if(obj.kind === "text"){
           if(!textStarted){ status.remove(); textStarted = true; }
           acc += obj.delta;
-          body.textContent = acc;
+          scheduleFlush();
         } else if(obj.kind === "error"){
           body.textContent = "[出错] " + obj.delta;
         } else if(obj.kind === "done"){
@@ -1324,9 +1341,10 @@ async function send(){
           }
         }
       }
-      chat.scrollTop = chat.scrollHeight;
     }
     clearTimeout(timeout);
+    if(flushTimer){ clearTimeout(flushTimer); flushTimer = null; }
+    flush();
     finished = true; clearInterval(timer);
     if(!textStarted){ status.remove(); body.textContent = acc || "(空)"; }
     const tools = document.createElement("div"); tools.className = "tools";
