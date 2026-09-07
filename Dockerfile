@@ -28,4 +28,5 @@ EXPOSE 8001
 
 # 注: /api/stt(语音转文字)依赖本地 whisper,云端默认不启用;
 #     如需语音,再补 COPY distill 并装 whisper + ffmpeg。
-CMD ["uvicorn", "ququ_server:app", "--host", "0.0.0.0", "--port", "8001"]
+# 用 $PORT:Render 会自动注入端口号(默认10000);本地跑则回退 8001。
+CMD ["sh", "-c", "uvicorn ququ_server:app --host 0.0.0.0 --port ${PORT:-8001}"]
