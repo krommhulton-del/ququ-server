@@ -1,19 +1,20 @@
-# 曲曲+塔罗 双人格AI 云端部署镜像
-# 用法: docker build -t ququ . && docker run -d -p 8001:8001 -e DEEPSEEK_API_KEY=xxx -v ququ_data:/app/data ququ
+# 鏇叉洸+濉旂綏 鍙屼汉鏍糀I 浜戠閮ㄧ讲闀滃儚
+# 鐢ㄦ硶: docker build -t ququ . && docker run -d -p 8001:8001 -e DEEPSEEK_API_KEY=xxx -v ququ_data:/app/data ququ
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# 只装运行 ququ_server 需要的轻量依赖(不含 whisper/playwright,省体积)
+# 鍙杩愯 ququ_server 闇€瑕佺殑杞婚噺渚濊禆(涓嶅惈 whisper/playwright,鐪佷綋绉?
 RUN pip install --no-cache-dir \
     fastapi>=0.115 \
     'uvicorn[standard]>=0.30' \
     pydantic>=2.7 \
     pydantic-settings>=2.3 \
     openai>=1.40 \
-    edge-tts>=6.1
+    edge-tts>=6.1 \
+    python-multipart>=0.0.9
 
-# 只复制 ququ 站必需的文件(不搬 AI Orchestrator 的 workspace/plans)
+# 鍙鍒?ququ 绔欏繀闇€鐨勬枃浠?涓嶆惉 AI Orchestrator 鐨?workspace/plans)
 COPY ququ_server.py .
 COPY backend/__init__.py backend/
 COPY backend/config.py backend/
@@ -21,12 +22,10 @@ COPY backend/expert.py backend/
 COPY backend/utils.py backend/
 COPY data/reference/ququ_skill.md data/reference/ququ_skill.md
 
-# 数据目录挂载点(聊天记录/邀请码落盘到这里,容器重启不丢)
+# 鏁版嵁鐩綍鎸傝浇鐐?鑱婂ぉ璁板綍/閭€璇风爜钀界洏鍒拌繖閲?瀹瑰櫒閲嶅惎涓嶄涪)
 VOLUME ["/app/data"]
 
 EXPOSE 8001
 
-# 注: /api/stt(语音转文字)依赖本地 whisper,云端默认不启用;
-#     如需语音,再补 COPY distill 并装 whisper + ffmpeg。
-# 用 $PORT:Render 会自动注入端口号(默认10000);本地跑则回退 8001。
-CMD ["sh", "-c", "uvicorn ququ_server:app --host 0.0.0.0 --port ${PORT:-8001}"]
+# 娉? /api/stt(璇煶杞枃瀛?渚濊禆鏈湴 whisper,浜戠榛樿涓嶅惎鐢?
+#     濡傞渶璇煶,鍐嶈ˉ COPY distill 骞惰 whisper + ffmpeg銆?# 鐢?$PORT:Render 浼氳嚜鍔ㄦ敞鍏ョ鍙ｅ彿(榛樿10000);鏈湴璺戝垯鍥為€€ 8001銆?CMD ["sh", "-c", "uvicorn ququ_server:app --host 0.0.0.0 --port ${PORT:-8001}"]
