@@ -117,16 +117,29 @@ TAROT_PROMPT = """你是资深的塔罗占卜师。
 8. 全程没有"作为一个AI""仅供参考"这类废话，没有置信度标注，没有人格免责。"""
 
 
+# 店主本人身份注记:店主是女性 —— 防止AI默认"用户是男性、对方是女性"搞反性别
+HOST_USER_NOTE = (
+    "\n\n【用户身份】当前用户是店主本人，一位女性。"
+    "她口中的“他/对方/另一半/目标对象”默认指男性；"
+    "除非她自己明确说明，一律按“用户=女性、对方=男性”理解，"
+    "不要把她当男性、也不要把对方当女性。"
+)
+
+
 def load_skill() -> str:
     return io.open(SKILL_PATH, encoding="utf-8").read()
 
 
-def build_system(mode: str) -> str:
+def build_system(mode: str, is_host: bool = False) -> str:
     if mode == "塔罗":
-        return TAROT_PROMPT
-    skill = load_skill()
-    m = MODES.get(mode, MODES["问答"])
-    return f"{skill}\n\n---\n【当前服务】{mode}\n{m}\n请只输出该服务要求的内容。"
+        base = TAROT_PROMPT
+    else:
+        skill = load_skill()
+        m = MODES.get(mode, MODES["问答"])
+        base = f"{skill}\n\n---\n【当前服务】{mode}\n{m}\n请只输出该服务要求的内容。"
+    if is_host:
+        base += HOST_USER_NOTE
+    return base
 
 
 def build_user(mode: str, c: dict, message: str) -> str:
@@ -523,7 +536,7 @@ def send(cid: str, req: SendReq):
     if not c.get("title") or c["title"] == "新对话":
         c["title"] = req.message[:18]
 
-    system = build_system(req.mode)
+    system = build_system(req.mode, is_host=bool(code.get("is_host")))
     user = build_user(req.mode, c, req.message)
 
     try:
@@ -555,7 +568,7 @@ def send_stream(cid: str, req: SendReq):
         c["title"] = req.message[:18]
     save_chats(data)
 
-    system = build_system(req.mode)
+    system = build_system(req.mode, is_host=bool(code.get("is_host")))
     user = build_user(req.mode, c, req.message)
 
     def gen():
