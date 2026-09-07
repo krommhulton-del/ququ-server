@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: ququ
+    runtime: docker
+    plan: free
+    region: singapore
+    envVars:
+      - key: DEEPSEEK_API_KEY
+        sync: false
+    healthCheckPath: /api/health
