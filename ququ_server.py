@@ -155,7 +155,7 @@ def build_system(mode: str, is_host: bool = False) -> str:
     date_line = (
         f"【当前时间】现在是北京时间 {now.year}年{now.month}月{now.day}日"
         f" 星期{'一二三四五六日'[now.weekday()]} {now.strftime('%H:%M')}。"
-        f"用户问日期/时间/星期时一律以此为准，不要猜。\n\n"
+        f"用户问日期/时间/星期/今天几号时，直接按上面如实回答，不要推诿、不要当成无关问题。\n\n"
     )
     if mode == "塔罗":
         base = TAROT_PROMPT
