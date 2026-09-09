@@ -151,6 +151,12 @@ def load_skill() -> str:
 
 
 def build_system(mode: str, is_host: bool = False) -> str:
+    now = now_cn()
+    date_line = (
+        f"【当前时间】现在是北京时间 {now.year}年{now.month}月{now.day}日"
+        f" 星期{'一二三四五六日'[now.weekday()]} {now.strftime('%H:%M')}。"
+        f"用户问日期/时间/星期时一律以此为准，不要猜。\n\n"
+    )
     if mode == "塔罗":
         base = TAROT_PROMPT
     else:
@@ -159,7 +165,7 @@ def build_system(mode: str, is_host: bool = False) -> str:
         base = f"{skill}\n\n---\n【当前服务】{mode}\n{m}\n请只输出该服务要求的内容。"
     if is_host:
         base += HOST_USER_NOTE
-    return base
+    return date_line + base
 
 
 def build_user(mode: str, c: dict, message: str) -> str:
