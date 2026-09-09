@@ -200,8 +200,73 @@ def draw_cards(count: int) -> list:
     return out
 
 
-# ---------------- 聊天记录持久化 ----------------
+# ---------------- 聊天记录持久化(本地 + 私有GitHub云同步) ----------------
+GH_TOKEN = os.environ.get("GITHUB_TOKEN", "").strip()
+GH_REPO = os.environ.get("GH_CHATS_REPO", "krommhulton-del/ququ-data").strip()
+GH_PATH = "ququ_chats.json"
+_gh_sha = None
+_gh_loaded = False
+
+
+def _gh_headers():
+    return {"Authorization": "Bearer " + GH_TOKEN, "Accept": "application/vnd.github+json", "User-Agent": "ququ-server"}
+
+
+def _gh_pull():
+    """从私有仓库拉取聊天记录字符串,失败返回 None。"""
+    global _gh_sha
+    if not GH_TOKEN:
+        return None
+    import urllib.request
+    import base64
+    try:
+        url = f"https://api.github.com/repos/{GH_REPO}/contents/{GH_PATH}"
+        req = urllib.request.Request(url, headers=_gh_headers())
+        with urllib.request.urlopen(req, timeout=25) as r:
+            meta = json.loads(r.read().decode("utf-8"))
+        _gh_sha = meta.get("sha")
+        return base64.b64decode(meta.get("content", "")).decode("utf-8")
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _gh_push(s: str) -> None:
+    """推送聊天记录到私有仓库,失败静默(不阻断聊天)。"""
+    global _gh_sha
+    if not GH_TOKEN:
+        return
+    import urllib.request
+    import base64
+    if not _gh_sha:
+        _gh_pull()  # 先拿最新 sha,避免覆盖冲突
+    payload = {"message": "sync chats", "content": base64.b64encode(s.encode("utf-8")).decode(), "branch": "main"}
+    if _gh_sha:
+        payload["sha"] = _gh_sha
+    try:
+        url = f"https://api.github.com/repos/{GH_REPO}/contents/{GH_PATH}"
+        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={**_gh_headers(), "Content-Type": "application/json"}, method="PUT")
+        with urllib.request.urlopen(req, timeout=25) as r:
+            meta = json.loads(r.read().decode("utf-8"))
+        _gh_sha = meta.get("content", {}).get("sha", _gh_sha)
+    except Exception:  # noqa: BLE001
+        _gh_sha = None  # 下次重来
+
+
 def load_chats() -> dict:
+    global _gh_loaded
+    # 云端:进程首次加载时从私有仓库拉一次(跨休眠/重启持久),之后走本地缓存
+    if GH_TOKEN and not _gh_loaded:
+        _gh_loaded = True
+        s = _gh_pull()
+        if s:
+            try:
+                data = json.loads(s)
+                os.makedirs(os.path.dirname(CHATS_FILE), exist_ok=True)
+                with open(CHATS_FILE, "w", encoding="utf-8") as f:
+                    f.write(s)
+                return data
+            except Exception:  # noqa: BLE001
+                pass
     if os.path.exists(CHATS_FILE):
         try:
             with open(CHATS_FILE, encoding="utf-8") as f:
@@ -213,8 +278,11 @@ def load_chats() -> dict:
 
 def save_chats(data: dict) -> None:
     os.makedirs(os.path.dirname(CHATS_FILE), exist_ok=True)
+    s = json.dumps(data, ensure_ascii=False, indent=2)
     with open(CHATS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        f.write(s)
+    if GH_TOKEN:
+        _gh_push(s)
 
 
 # ---------------- 邀请码(多用户/配额) ----------------
