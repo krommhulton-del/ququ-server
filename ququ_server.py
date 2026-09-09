@@ -15,7 +15,14 @@ import os
 import secrets
 import tempfile
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+
+CN_TZ = timezone(timedelta(hours=8))
+
+
+def now_cn() -> datetime:
+    """北京时间(UTC+8):服务器在海外(UTC)也返回北京时间。"""
+    return datetime.now(timezone.utc).astimezone(CN_TZ)
 
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse, Response, JSONResponse, StreamingResponse
@@ -234,7 +241,10 @@ def _code_expired(c: dict) -> bool:
     if not exp:
         return False
     try:
-        return datetime.fromisoformat(exp) < datetime.now()
+        dt = datetime.fromisoformat(exp)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=CN_TZ)  # 旧数据无时区,按北京时间
+        return dt < now_cn()
     except Exception:  # noqa: BLE001
         return False
 
@@ -351,7 +361,7 @@ def admin_create_codes(req: CodeCreate):
             "code": code, "plan": req.plan, "category": req.category,
             "duration_days": int(req.duration_days), "max_messages": int(req.max_messages),
             "remaining": int(req.max_messages), "status": "unused",
-            "created_at": datetime.now().isoformat(), "activated_at": None,
+            "created_at": now_cn().isoformat(), "activated_at": None,
             "expires_at": None, "note": req.note,
         })
         made.append(code)
@@ -377,8 +387,8 @@ def activate(req: ActivateReq):
         return JSONResponse({"error": "邀请码已到期"}, status_code=403)
     if c.get("status") == "unused":
         c["status"] = "active"
-        c["activated_at"] = datetime.now().isoformat()
-        c["expires_at"] = (datetime.now() + timedelta(days=int(c.get("duration_days", 30)))).isoformat()
+        c["activated_at"] = now_cn().isoformat()
+        c["expires_at"] = (now_cn() + timedelta(days=int(c.get("duration_days", 30)))).isoformat()
         save_codes(data)
     if int(c.get("remaining", 0)) <= 0 and int(c.get("max_messages", 0)) > 0:
         return JSONResponse({"error": "次数已用完，请续费"}, status_code=403)
@@ -440,7 +450,7 @@ def create_chat(req: ChatCreate):
     cid = uuid.uuid4().hex[:12]
     data["chats"].append({
         "id": cid, "category": req.category, "title": "新对话",
-        "created_at": datetime.now().isoformat(), "messages": [],
+        "created_at": now_cn().isoformat(), "messages": [],
         "code": c.get("code", ""),
     })
     save_chats(data)
