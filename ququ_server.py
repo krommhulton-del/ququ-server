@@ -637,7 +637,7 @@ def send(cid: str, req: SendReq):
     user = build_user(req.mode, c, req.message)
 
     try:
-        content, reasoning = _chat(system, user, max_tokens=32768, reasoning_effort="max")
+        content, reasoning = _chat(system, user, max_tokens=32768, reasoning_effort="high")
         content = content.strip()
     except Exception as e:  # noqa: BLE001
         content, reasoning = f"[出错] {e}", ""
@@ -671,7 +671,7 @@ def send_stream(cid: str, req: SendReq):
     def gen():
         full: list[str] = []
         try:
-            for chunk in discuss_stream(system, user, max_tokens=32768, reasoning_effort="max"):
+            for chunk in discuss_stream(system, user, max_tokens=32768, reasoning_effort="high"):
                 kind = chunk["kind"]
                 delta = chunk["delta"]
                 if kind == "thinking":
