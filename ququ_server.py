@@ -420,6 +420,7 @@ class SpreadGenReq(BaseModel):
 class CustomDrawReq(BaseModel):
     count: int = 3
     positions: list = []
+    counts: list = []
     label: str = ""
 
 
@@ -513,12 +514,30 @@ def tarot_draw(spread: str = "three", count: int = 0):
 
 @app.post("/api/tarot/draw/custom")
 def tarot_draw_custom(req: CustomDrawReq):
-    n = max(1, min(int(req.count), 78))
-    cards = draw_cards(n)
     positions = req.positions or []
+    counts = req.counts or []
+    per = None
+    if counts and len(counts) == len(positions) and len(positions) > 0:
+        # 每个位置可抽多张:counts[i]=该位置张数
+        per = [max(1, min(int(x), 20)) for x in counts]
+        n = max(1, min(sum(per), 78))
+    else:
+        n = max(1, min(int(req.count), 78))
+    cards = draw_cards(n)
     label = req.label or f"自定义 · {n}张"
-    for i, c in enumerate(cards):
-        c["position"] = positions[i] if i < len(positions) else f"位置{i+1}"
+    if per:
+        idx = 0
+        for pi in range(len(positions)):
+            pname = positions[pi]
+            for _ in range(per[pi]):
+                if idx < len(cards):
+                    cards[idx]["position"] = pname
+                    idx += 1
+        for j in range(idx, len(cards)):
+            cards[j]["position"] = f"位置{j+1}"
+    else:
+        for i, c in enumerate(cards):
+            c["position"] = positions[i] if i < len(positions) else f"位置{i+1}"
     return {"spread": label, "count": n, "cards": cards}
 
 
@@ -1035,6 +1054,8 @@ button.ghost{background:transparent;border:1px solid var(--line);color:var(--sub
 .se-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .se-idx{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--tarot);color:#0d1f1e;font-size:12px;font-weight:700;text-align:center;line-height:22px}
 .se-pos{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;color:var(--txt);font-size:14px;outline:none}
+.se-cnt{width:52px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 8px;color:var(--txt);font-size:14px;text-align:center;outline:none}
+.se-p{color:var(--sub);font-size:12px}
 #mic.rec{background:#ff6b6b;color:#fff}
 .typing{color:var(--sub);font-size:13px;padding:4px 2px}
 #scriptPanel{display:none;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
@@ -1599,7 +1620,7 @@ async function genSpread(){
     const r = await fetch("/api/tarot/spread/generate", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
     const j = await r.json();
     if(j.error){ toast("生成失败："+j.error); return; }
-    aiSpread = { label: j.label, count: j.count, positions: j.positions.slice() };
+    aiSpread = { label: j.label, count: j.count, positions: j.positions.slice(), counts: j.positions.map(() => 1) };
     renderSpreadEditor();
     toast("牌阵已生成："+j.label+"（"+j.count+"张），位置名可改 ✅");
   }catch(e){ toast("生成出错："+e); }
@@ -1610,13 +1631,25 @@ function renderSpreadEditor(){
   const el = document.getElementById("spreadEditor");
   if(!aiSpread){ el.style.display = "none"; el.innerHTML = ""; return; }
   el.style.display = "block";
-  let html = '<div class="se-head"><b>'+aiSpread.label+'</b><span>'+aiSpread.count+'张 · 点位置名可改</span><button onclick="clearSpread()">✕ 清除</button></div>';
+  const total = aiSpread.counts.reduce((a,b)=>a+b, 0);
+  let html = '<div class="se-head"><b>'+aiSpread.label+'</b><span>共'+total+'张 · 位置名可改 · 后面数字=该位置抽几张</span><button onclick="clearSpread()">✕ 清除</button></div>';
   aiSpread.positions.forEach((p, i) => {
-    html += '<div class="se-row"><span class="se-idx">'+(i+1)+'</span><input class="se-pos" data-i="'+i+'" value="'+String(p).replace(/"/g,"&quot;")+'"></div>';
+    html += '<div class="se-row"><span class="se-idx">'+(i+1)+'</span><input class="se-pos" data-i="'+i+'" value="'+String(p).replace(/"/g,"&quot;")+'"><input class="se-cnt" type="number" min="1" max="10" data-i="'+i+'" value="'+aiSpread.counts[i]+'"><span class="se-p">张</span></div>';
   });
   el.innerHTML = html;
   el.querySelectorAll(".se-pos").forEach(inp => {
     inp.oninput = () => { aiSpread.positions[parseInt(inp.dataset.i,10)] = inp.value; };
+  });
+  el.querySelectorAll(".se-cnt").forEach(inp => {
+    inp.oninput = () => {
+      let v = parseInt(inp.value, 10);
+      if(isNaN(v) || v < 1) v = 1;
+      if(v > 10) v = 10;
+      inp.value = v;
+      aiSpread.counts[parseInt(inp.dataset.i,10)] = v;
+      const t = aiSpread.counts.reduce((a,b)=>a+b, 0);
+      el.querySelector(".se-head span").textContent = '共'+t+'张 · 位置名可改 · 后面数字=该位置抽几张';
+    };
   });
 }
 
@@ -1627,7 +1660,7 @@ async function drawTarot(){
   const q = input.value.trim();
   let j;
   if(aiSpread){
-    const r = await fetch("/api/tarot/draw/custom", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({count: aiSpread.count, positions: aiSpread.positions, label: aiSpread.label})});
+    const r = await fetch("/api/tarot/draw/custom", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({count: aiSpread.count, positions: aiSpread.positions, counts: aiSpread.counts, label: aiSpread.label})});
     j = await r.json();
   } else {
     const spread = document.getElementById("spread").value || "three";
