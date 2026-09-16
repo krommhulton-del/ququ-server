@@ -83,18 +83,25 @@ SPREADS = {
     # —— 事业 / 财运 ——
     "career":     {"label": "事业财运 · 工作+搞钱", "count": 7, "positions": ["现状", "优势资源", "阻碍", "外部环境", "财运趋势", "建议", "结果"]},
     "money":      {"label": "财运专版 · 钱从哪来", "count": 5, "positions": ["财务现状", "收入机会", "支出与风险", "建议", "结果"]},
+    "wealth":     {"label": "总资产 · 财富全景(含百亿)", "count": 5, "positions": ["财务现状/家底", "收入与现金流", "总资产量级", "负债与风险", "财富顶点/上限"]},
 }
 
-RULES_TEXT = """【总则】只用权威韦特塔罗牌义解读,不编造数字、不臆造对应关系。牌面给什么说什么:数字牌看数字(程度/阶段)、花色看领域、正逆看顺阻、宫廷看人物、大阿卡纳看命运主题。
+RULES_TEXT = """【总则】只用权威韦特塔罗牌义解读;数字牌看数字、花色看领域、正逆看顺阻、宫廷看人物、大阿卡纳看命运主题。牌面给什么说什么,不编造不臆造;客观量化用对数尺+标准锚点(央行/统计局/国标)。档位:数字牌Ace=1、2-10=牌面数字;宫廷牌侍从=2/骑士=4/王后=6/国王=8;逆位=档位减1(最低1);大阿卡纳不落档、只按牌义定性。
 【花色·领域】星币=土=金钱/物质/身体/结果;圣杯=水=情感/关系/情绪;宝剑=风=思想/言语/冲突/压力;权杖=火=行动/事业/欲望/能量。
 【数字·程度】Ace=起点/种子;2=平衡/选择;3=成长/三方;4=稳定/停滞;5=变动/冲突/失落;6=和谐/修复;7=评估/坚持;8=推进/掌控;9=沉淀/接近完成;10=完成/顶点/满盈。
 【正逆】正位=能量顺畅/正向表达;逆位=受阻/过度/不足/内在化。
 【宫廷】侍从=新手/消息/学习;骑士=行动/奔赴/追求;王后=成熟/滋养/内在;国王=权威/掌控/成果。
 【大阿卡纳】愚者=新开始冒险;魔术师=能力开端;女祭司=直觉等待;皇后=丰饶滋养;皇帝=权威秩序;教皇=传统规范;恋人=选择结合;战车=意志前进;力量=勇气耐心;隐者=内省求索;命运之轮=转机周期;正义=因果平衡;倒吊人=搁置换视角;死神=结束蜕变;节制=调和适度;恶魔=束缚欲望;高塔=突变崩塌;星星=希望疗愈;月亮=迷茫潜藏;太阳=成功光明;审判=觉醒复盘;世界=完成圆满。
-【时间·权威惯例】花色定单位(火最快、土最慢):权杖=天/宝剑=周/圣杯=月/星币=年;数量=牌面数字(Ace=1);正位按时、逆位延迟;停滞牌(倒吊人/宝剑4/宝剑8)=搁置不定不给时长;快牌(权杖8/战车/愚者/死神)偏快、慢牌(倒吊人/节制/月亮/星币10)偏慢;宫廷牌=季节(侍从春/骑士夏/王后秋/国王冬)。
-【金钱·牌面直读】牌面数字=具体数字,单位按维度固定:月薪/月总收入=×1000元;年总收入/存款=×1万元;总资产/房产=×100万元;投资=×10万元;车子=×5万元;副业/单次消费=×100元;每月消费=×500元;给对象花/对方给你花=×200元;单品=×500元。正位照读、逆位数字减一档(Ace逆=0即几乎没有);花色/牌义给性质方向(星币钱旺、宝剑压力、圣杯情绪、权杖行动),在解读里说清为什么是这个数。例:月薪星币5正=5×1000=5000元;总资产星币10正=10×100万=1000万。不校准、不设上下限,牌面是多少就说多少。
-【是/否】正位偏是、逆位偏否、大阿卡纳看牌义(太阳/世界/恋人/星星/审判偏是;高塔/死神/恶魔/月亮偏否;倒吊人/节制=待定);多牌以结果位为准、其余牌给倾向;输出是/否/待定+把握(勉强/倾向/明确/斩钉截铁)。
-【不设规则(主观)】爱不爱/想法/真心/两性关系一切维度/纯情绪态度动机——但多久/什么时候是时间题适用时间规则。"""
+【多牌主牌】多牌题只以"主牌"报具体数字,其余牌只给方向(正位往上带、逆位往下带),不做数值加减。主牌判定:问结果/未来→结果位;问现状→现状位;问对方想法→对方想法位;问多久/何时→时机/时间位;无对应位→最后一张。
+【时间】只数字牌产生时长(宫廷牌=季节、大阿卡纳只定性):单位按花色=权杖天/宝剑周/圣杯月/星币年;数量=牌面数字(Ace=1);正位=该时长;逆位=延迟(数量+1单位)。停滞牌(倒吊人/宝剑4/宝剑8)=搁置不定、不给时长(最高优先);快牌(权杖8/战车/愚者/死神/太阳)解读里说"可能更快";慢牌(节制/月亮/星币10)说"可能更久"(快慢只定性、不改数字)。时点题(什么时候)用宫廷季节:侍从春3-5月/骑士夏6-8月/王后秋9-11月/国王冬12-2月。牌面说多久就多久,不设上下限。
+【收入·牌面直读】月薪=档×1000元、月总收入=档×1500元、年总收入=档×1.2万元(=月薪×12)、副业月收入=档×100元;正位照读、逆位档-1。锚点:全国工资中位数5000元=月薪档5。
+【净资产·对数尺】(问"身家/家里有多少钱/家底/净资产"用此尺)档=:1=0或负债 2=5万 3=15万 4=45万 5=140万 6=400万 7=1200万 8=3500万 9=5000万 10=1亿+;锚点:央行城镇家庭净资产中位数141万≈档5。正位照读、逆位档-1。
+【总资产·富豪对数尺】(问"总资产/公司/市值/富豪/百亿/千亿"用此尺)档=:1=1亿 2=3亿 3=10亿 4=30亿 5=100亿(百亿级) 6=300亿 7=1000亿(千亿级) 8=3000亿 9=1万亿 10=3万亿+;正位照读、逆位档-1。大阿卡纳在此尺按牌义定性:太阳/世界/皇后/皇帝/命运之轮=极富(亿级到百亿级往上)、高塔/死神/恶魔/月亮=破财/负债/崩盘(可归零)、倒吊人/隐者=资金不流动/搁置,不报精确数。
+【其余金额·牌面直读】存款=档×1万元、投资=档×10万元、房产=档×100万元、车子=档×5万元、每月消费=档×500元、月给对象花=档×200元/月、对方月给你花=档×200元/月、单次消费=档×100元、单品=档×500元;正位照读、逆位档-1。
+【概率/是·否】数字牌正位概率=牌面×10%(档10=100%必成、Ace=10%);逆位=(牌面-1)×10%(Ace逆=0%)。宫廷牌:侍从20%/骑士40%/王后60%/国王80%,逆位减30个百分点(最低0%):侍从逆0%/骑士逆10%/王后逆30%/国王逆50%。大阿卡纳:太阳/世界/恋人/星星/审判=偏是(约80-90%),高塔/死神/恶魔/月亮=偏否(约10-20%),倒吊人/节制/正义/女祭司=待定(约五五开),其余大阿卡纳只定性不报百分比。判定:≥65%="大概率是/会",≤35%="大概率否/不会",36-64%="待定/说不准"。把握:≥90%斩钉截铁、75-89%明确、65-74%倾向、45-64%待定、35-44%偏低、20-34%明确否、<20%斩钉截铁否。多牌以主牌为准、其余给倾向。不回避0%和100%。
+【身高cm】男:1=150 2=155 3=160 4=165 5=170 6=175 7=180 8=185 9=190 10=195;女:1=140 2=145 3=150 4=154 5=158 6=162 7=166 8=170 9=174 10=178;锚点GB/T10000-2023:男均170=档5/女均158=档5;正位照读、逆位档-1(偏矮);大阿卡纳只定性(高/中等/矮)。
+【年龄】宫廷牌:侍从<20/骑士20-35/王后35-50/国王50-70;数字牌档:1=12 2=18 3=24 4=30 5=39 6=48 7=57 8=66 9=75 10=84岁;锚点:全国人口中位年龄39岁=档5;正位照读、逆位档-1(更年轻);大阿卡纳只定性(年轻/中年/年长)。
+【感情边界(不设规则)】爱不爱/什么想法/真不真心/有没有感觉/喜不喜欢/值不值得/会不会有结果/两性关系一切维度/纯情绪态度动机——不套量表、不用是/否、不报数字,交主观解读。但分清:多久/什么时候=时间题;"会不会+客观动作(来找我/复合/结婚/升职/跳槽/有没有某物)"=是/否题;"给/花/赚/有多少钱/身家"=金钱题。"""
 
 TAROT_PROMPT = """你是资深的塔罗占卜师。
 
@@ -109,7 +116,7 @@ TAROT_PROMPT = """你是资深的塔罗占卜师。
 """ + RULES_TEXT + """
 
 【解读要求】
-1. 先判断问题类型：金钱题按【金钱·牌面直读】给具体数字(牌面数字×单位)、时间题按花色单位、是/否按正逆牌义；纯感情题不套量表，主观解读。
+1. 先判断问题类型：金钱题按问题措辞选尺——收入类【收入·牌面直读】、身家家底【净资产·对数尺】、总资产/富豪/百亿【总资产·富豪对数尺】;时间题按花色单位;是/否按正逆牌义；纯感情题不套量表，主观解读。
 2. 直接对"你"说话，像微信打字聊天那样口语、自然、有人味。不要"#号标题"、不要"##小标题"、不要 bullet 列表、不要满篇加粗、不要"第一/第二/第三"的排比。
 3. 先甩结论，再讲为什么(倒金字塔)。别绕弯子、别铺垫。
 4. 金钱/时间题：把"牌→数字"的依据用一句大白话说清(如"月薪星币5=5×1000=5000元")，直接报具体数字，再讲牌义为什么是这个数；牌面指向极端就照实说，别用"几万/几千"这种模糊说法。
@@ -385,6 +392,18 @@ class ActivateReq(BaseModel):
     code: str = ""
 
 
+class SpreadGenReq(BaseModel):
+    question: str = ""
+    count: int = 0
+    requirement: str = ""
+
+
+class CustomDrawReq(BaseModel):
+    count: int = 3
+    positions: list = []
+    label: str = ""
+
+
 @app.get("/api/health")
 def health():
     return {"ok": True, "modes": list(MODES) + ["塔罗"]}
@@ -471,6 +490,64 @@ def tarot_draw(spread: str = "three", count: int = 0):
     for i, c in enumerate(cards):
         c["position"] = positions[i] if i < len(positions) else f"位置{i+1}"
     return {"spread": label, "count": n, "cards": cards}
+
+
+@app.post("/api/tarot/draw/custom")
+def tarot_draw_custom(req: CustomDrawReq):
+    n = max(1, min(int(req.count), 78))
+    cards = draw_cards(n)
+    positions = req.positions or []
+    label = req.label or f"自定义 · {n}张"
+    for i, c in enumerate(cards):
+        c["position"] = positions[i] if i < len(positions) else f"位置{i+1}"
+    return {"spread": label, "count": n, "cards": cards}
+
+
+@app.post("/api/tarot/spread/generate")
+def tarot_spread_generate(req: SpreadGenReq):
+    q = (req.question or "").strip()
+    if not q:
+        return JSONResponse({"error": "请先描述你的问题，再生成牌阵"}, status_code=400)
+    system = (
+        "你是资深塔罗牌阵设计师。根据用户的问题设计一个最贴合的牌阵。"
+        "只输出一个 JSON 对象，不要任何解释文字、不要 markdown 代码块。"
+        '格式：{"label":"牌阵名","count":张数,"positions":["位置1","位置2",...]}。'
+        "要求：位置名必须具体贴合问题(避免笼统的'过去/现在/未来'这种万能位)；"
+        "positions 数量必须等于 count；张数 1-12 之间。"
+        "类型参考：感情复合(现状/对方状态/核心原因/阻碍/该怎么做/时机/结果)、"
+        "事业财运(现状/优势/阻碍/环境/财运/建议/结果)、"
+        "选择决策(现状/选项A利弊/选项B利弊/顾虑/建议)、"
+        "读心(TA想法/TA状态/TA是否主动/走向/建议)、"
+        "时间(现状/阻碍/时机/结果)、是或否(判定1/判定2/判定3)。"
+    )
+    req_text = f"用户问题：{q}\n"
+    if (req.requirement or "").strip():
+        req_text += f"用户对牌阵的要求：{req.requirement.strip()}\n"
+    if req.count and int(req.count) > 0:
+        req_text += f"用户指定张数：{int(req.count)} 张(严格遵守)\n"
+    else:
+        req_text += "张数由你按问题复杂程度决定(3-9张为宜)。\n"
+    try:
+        content, _ = _chat(system, req_text, max_tokens=1024, reasoning_effort="low")
+        content = (content or "").strip()
+        s = content.find("{")
+        e = content.rfind("}")
+        if s < 0 or e <= s:
+            return JSONResponse({"error": "AI 生成失败，请重试", "raw": content[:200]}, status_code=500)
+        obj = json.loads(content[s:e + 1])
+        label = obj.get("label") or "AI 定制牌阵"
+        positions = [str(x) for x in (obj.get("positions") or [])]
+        count = int(obj.get("count") or len(positions) or 3)
+        count = max(1, min(count, 12))
+        if not positions:
+            positions = [f"位置{i+1}" for i in range(count)]
+        if len(positions) > count:
+            positions = positions[:count]
+        while len(positions) < count:
+            positions.append(f"位置{len(positions)+1}")
+        return {"label": label, "count": count, "positions": positions}
+    except Exception as ex:  # noqa: BLE001
+        return JSONResponse({"error": f"AI 生成失败：{ex}"}, status_code=500)
 
 
 @app.get("/api/chats")
@@ -930,6 +1007,15 @@ button.ghost{background:transparent;border:1px solid var(--line);color:var(--sub
 #tarotRow{display:none;gap:6px;align-items:center}
 #spread{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--txt);font-size:14px;outline:none}
 #draw{background:var(--tarot);color:#0d1f1e;border:none;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:600}
+#genSpread{background:#2a3140;color:var(--accent);border:1px solid var(--accent);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;white-space:nowrap}
+#spreadEditor{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:6px}
+.se-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:14px}
+.se-head b{color:var(--tarot)}
+.se-head span{color:var(--sub);font-size:12px}
+.se-head button{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--sub);border-radius:8px;padding:2px 8px;font-size:12px}
+.se-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.se-idx{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--tarot);color:#0d1f1e;font-size:12px;font-weight:700;text-align:center;line-height:22px}
+.se-pos{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;color:var(--txt);font-size:14px;outline:none}
 #mic.rec{background:#ff6b6b;color:#fff}
 .typing{color:var(--sub);font-size:13px;padding:4px 2px}
 #scriptPanel{display:none;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
@@ -1104,8 +1190,10 @@ body.ishost .hostonly{display:revert}
     <div id="tarotRow">
       <select id="spread"></select>
       <input id="customCount" type="number" min="1" max="78" value="3" placeholder="张数" style="display:none;width:70px">
+      <button id="genSpread" onclick="genSpread()" title="按你的问题自动设计牌阵">✨ AI牌阵</button>
       <button id="draw" onclick="drawTarot()">🃏 抽牌解读</button>
     </div>
+    <div id="spreadEditor" style="display:none"></div>
     <button id="scriptBtn" class="ghost hostonly" onclick="toggleScript()" title="常用话术一键复制">📋 话术</button>
     <button id="mic" class="ghost" title="点击录音,再点停止">🎤</button>
     <input id="input" placeholder="输入你的问题…(Enter 发送)">
@@ -1117,6 +1205,7 @@ body.ishost .hostonly{display:revert}
 let currentChatId = null;
 let currentMode = "问答";
 let deep = true;
+let aiSpread = null;
 let activeCode = localStorage.getItem("ququ_code") || "";
 let activeInfo = null;
 const chat = document.getElementById("chat");
@@ -1477,16 +1566,59 @@ async function speak(text){
   }catch(e){ alert("朗读失败: " + e); }
 }
 
+async function genSpread(){
+  const q = input.value.trim();
+  if(!q){ toast("先把问题打在输入框里，再点✨AI牌阵"); return; }
+  const btn = document.getElementById("genSpread");
+  btn.textContent = "生成中…"; btn.disabled = true;
+  try{
+    const body = { question: q };
+    if(document.getElementById("customCount").style.display !== "none"){
+      const cnt = parseInt(document.getElementById("customCount").value, 10);
+      if(cnt > 0) body.count = cnt;
+    }
+    const r = await fetch("/api/tarot/spread/generate", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
+    const j = await r.json();
+    if(j.error){ toast("生成失败："+j.error); return; }
+    aiSpread = { label: j.label, count: j.count, positions: j.positions.slice() };
+    renderSpreadEditor();
+    toast("牌阵已生成："+j.label+"（"+j.count+"张），位置名可改 ✅");
+  }catch(e){ toast("生成出错："+e); }
+  finally{ btn.textContent = "✨ AI牌阵"; btn.disabled = false; }
+}
+
+function renderSpreadEditor(){
+  const el = document.getElementById("spreadEditor");
+  if(!aiSpread){ el.style.display = "none"; el.innerHTML = ""; return; }
+  el.style.display = "block";
+  let html = '<div class="se-head"><b>'+aiSpread.label+'</b><span>'+aiSpread.count+'张 · 点位置名可改</span><button onclick="clearSpread()">✕ 清除</button></div>';
+  aiSpread.positions.forEach((p, i) => {
+    html += '<div class="se-row"><span class="se-idx">'+(i+1)+'</span><input class="se-pos" data-i="'+i+'" value="'+String(p).replace(/"/g,"&quot;")+'"></div>';
+  });
+  el.innerHTML = html;
+  el.querySelectorAll(".se-pos").forEach(inp => {
+    inp.oninput = () => { aiSpread.positions[parseInt(inp.dataset.i,10)] = inp.value; };
+  });
+}
+
+function clearSpread(){ aiSpread = null; renderSpreadEditor(); }
+
 async function drawTarot(){
   if(!currentChatId){ await newChat(); }
-  const spread = document.getElementById("spread").value || "three";
-  let url = "/api/tarot/draw?spread="+spread;
-  if(spread === "custom"){
-    const n = parseInt(document.getElementById("customCount").value, 10) || 3;
-    url += "&count=" + Math.max(1, Math.min(n, 78));
-  }
   const q = input.value.trim();
-  const j = await api(url);
+  let j;
+  if(aiSpread){
+    const r = await fetch("/api/tarot/draw/custom", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({count: aiSpread.count, positions: aiSpread.positions, label: aiSpread.label})});
+    j = await r.json();
+  } else {
+    const spread = document.getElementById("spread").value || "three";
+    let url = "/api/tarot/draw?spread="+spread;
+    if(spread === "custom"){
+      const n = parseInt(document.getElementById("customCount").value, 10) || 3;
+      url += "&count=" + Math.max(1, Math.min(n, 78));
+    }
+    j = await api(url);
+  }
   // 显示牌面
   const box = document.createElement("div");
   box.className = "msg ai";
