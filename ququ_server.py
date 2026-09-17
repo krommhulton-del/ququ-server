@@ -519,6 +519,11 @@ def tarot_draw_custom(req: CustomDrawReq):
         # 每个位置可抽多张:counts[i]=该位置张数
         per = [max(1, min(int(x), 20)) for x in counts]
         n = max(1, min(sum(per), 78))
+    elif positions and not counts:
+        # 前端未传 counts 时按同一规则补默认:位置<=3→每位置3张(构成完整故事),位置多→每位置1张
+        d = 3 if len(positions) <= 3 else 1
+        per = [d] * len(positions)
+        n = max(1, min(sum(per), 78))
     else:
         n = max(1, min(int(req.count), 78))
     cards = draw_cards(n)
@@ -1618,11 +1623,20 @@ async function genSpread(){
     const r = await fetch("/api/tarot/spread/generate", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
     const j = await r.json();
     if(j.error){ toast("生成失败："+j.error); return; }
-    aiSpread = { label: j.label, count: j.count, positions: j.positions.slice(), counts: j.positions.map(() => 1) };
+    aiSpread = { label: j.label, count: j.count, positions: j.positions.slice(), counts: defaultCounts(j.positions.length) };
+    // count 同步为各位置张数之和，避免与 counts 不一致
+    aiSpread.count = aiSpread.counts.reduce((a,b)=>a+b, 0);
     renderSpreadEditor();
-    toast("牌阵已生成："+j.label+"（"+j.count+"张），位置名可改 ✅");
+    toast("牌阵已生成："+j.label+"（"+aiSpread.count+"张），位置名可改、张数可调 ✅");
   }catch(e){ toast("生成出错："+e); }
   finally{ btn.textContent = "✨ AI牌阵"; btn.disabled = false; }
+}
+
+// 每位置默认张数：位置少(<=3)默认3张(构成"起点-现况-方向"完整故事)，位置多默认1张(避免总牌数爆炸、
+// 也避免单张解不出脉络)。依据:塔罗圈共识"三张是一条线",单张只有孤立判断。
+function defaultCounts(n){
+  const per = n <= 3 ? 3 : 1;
+  return Array.from({length: n}, () => per);
 }
 
 function renderSpreadEditor(){
@@ -1630,7 +1644,7 @@ function renderSpreadEditor(){
   if(!aiSpread){ el.style.display = "none"; el.innerHTML = ""; return; }
   el.style.display = "block";
   const total = aiSpread.counts.reduce((a,b)=>a+b, 0);
-  let html = '<div class="se-head"><b>'+aiSpread.label+'</b><span>共'+total+'张 · 位置名可改 · 后面数字=该位置抽几张</span><button onclick="clearSpread()">✕ 清除</button></div>';
+  let html = '<div class="se-head"><b>'+aiSpread.label+'</b><span>共'+total+'张 · 位置名可改 · 后面数字=该位置抽几张（默认3张，位置多时1张）</span><button onclick="clearSpread()">✕ 清除</button></div>';
   aiSpread.positions.forEach((p, i) => {
     html += '<div class="se-row"><span class="se-idx">'+(i+1)+'</span><input class="se-pos" data-i="'+i+'" value="'+String(p).replace(/"/g,"&quot;")+'"><input class="se-cnt" type="number" min="1" max="10" data-i="'+i+'" value="'+aiSpread.counts[i]+'"><span class="se-p">张</span></div>';
   });
@@ -1645,8 +1659,9 @@ function renderSpreadEditor(){
       if(v > 10) v = 10;
       inp.value = v;
       aiSpread.counts[parseInt(inp.dataset.i,10)] = v;
-      const t = aiSpread.counts.reduce((a,b)=>a+b, 0);
-      el.querySelector(".se-head span").textContent = '共'+t+'张 · 位置名可改 · 后面数字=该位置抽几张';
+      aiSpread.count = aiSpread.counts.reduce((a,b)=>a+b, 0);
+      const t = aiSpread.count;
+      el.querySelector(".se-head span").textContent = '共'+t+'张 · 位置名可改 · 后面数字=该位置抽几张（默认3张，位置多时1张）';
     };
   });
 }
