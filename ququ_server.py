@@ -91,7 +91,7 @@ RULES_TEXT = """【总则】只用权威韦特塔罗牌义解读;牌义定层级
 【数字·面向】数字牌=同花色的不同面向/阶段(不是金额档位):Ace=起点/种子;2=平衡/选择;3=成长;4=稳定;5=变动/失落;6=和谐;7=评估/坚持;8=推进;9=沉淀/接近完成;10=完成/顶点/满盈。
 【宫廷·成熟度】侍从=新手/学习/年轻;骑士=行动/奔赴/上升;王后=成熟/滋养/内在;国王=权威/掌控/成果(是成熟度与态度,不是资产阶层)。
 【大阿卡纳】愚者=新开始冒险;魔术师=能力开端;女祭司=直觉等待;皇后=丰饶滋养;皇帝=权威秩序;教皇=传统规范;恋人=选择结合;战车=意志前进;力量=勇气耐心;隐者=内省求索;命运之轮=转机周期;正义=因果平衡;倒吊人=搁置换视角;死神=结束蜕变;节制=调和适度;恶魔=束缚欲望;高塔=突变崩塌;星星=希望疗愈;月亮=迷茫潜藏/被骗;太阳=成功光明;审判=觉醒复盘;世界=完成圆满。
-【多牌主牌】多牌题只以"主牌"报结论,其余牌只给方向(正位往上带、逆位往下带),不做数值加减。主牌判定:问结果/未来→结果位;问现状→现状位;问对方想法→对方想法位;问多久/何时→时机/时间位;问收入/总资产/身家/财富多少→"收入"位或"总资产量级"位或"财富顶点"位;无对应位→最后一张。牌的数量不影响结论:只看主牌这一张(该位置抽多张时取最贴近问题的一张或综合判断)。
+【多牌主牌】多牌题只以"主牌"报结论,其余牌只给方向(正位往上带、逆位往下带),不做数值加减。主牌判定:问结果/未来→结果位;问现状→现状位;问对方想法→对方想法位;问多久/何时→时机/时间位;问收入/总资产/身家/财富多少→"收入"位或"总资产量级"位或"财富顶点"位;无对应位→最后一张。牌的数量不影响结论:只看主牌这一张。【同位置多牌】同一位置抽多张(如3张)时,这3张是该位置的一组完整信息(起点/现况/方向),要综合成一个连贯判断、不是逐张孤立报;以牌义最强、最贴近问题的一张为主牌定结论,其余牌做印证/补充/方向;3张相互矛盾时以主牌为准,并说明其余牌的修正。
 【贫富两极(权威原文)】穷/破财:高塔(indigence/ruin)、星币5(destitution)、死神(loss)、宝剑5/9(loss/despair)、恶魔、宝剑王后(privation)。富/满盈:星币10(Gain/riches)、世界(Assured success)、星币王后(Opulence)、星币9(abundance)、星币Ace(gold)、太阳(物质幸福)、皇后(丰饶)、皇帝(世俗权)、命运之轮(机运)。
 【金钱·层级】(收入+财富统一;按主牌权威牌义定级,7级①→⑦):①高塔/死神/恶魔;②星币5/宝剑5/宝剑9/宝剑王后;③星币2/3/4/7/8、侍从、骑士、月亮(账目不清但非归零);④星币6/星币9/太阳/皇后;⑤星币Ace/星币10/皇帝/命运之轮/国王;⑥世界/星币王后;⑦世界/星币10+明确首富/上市公司/马斯克语境。量级锚点(央行/胡润/统计局):收入(月薪)=①无收入或负债 ②<3000元 ③3000~8000元(全国工资中位5000) ④8000~2万 ⑤2万~10万 ⑥10万以上 ⑦千万年薪级;财富(总资产)=①净资产≤0 ②<50万 ③50万~300万(城镇总资产中位163万) ④300万~600万 ⑤600万~1000万(胡润高净值门槛) ⑥1000万~1亿 ⑦1亿~100亿(极端可到千亿~万亿,马斯克约6.2万亿)。只报"层级名+量级区间",不编造精确到个位的数。
 【时间】(快慢方向,无固定单位,不报具体天数)花色快慢(有原文依据):权杖/宝剑=快(swift/haste)→近期(几天~几周);圣杯=中→中期(几周~几月);星币=慢(slow/lethargic)→长期(几月~几年)。停滞牌(宝剑4/倒吊人/隐者)=搁置不定、不给时长。大阿卡纳只定性(太阳/战车/死神/愚者=偏快,节制/月亮=偏慢)。数字牌只给"该档内偏短/偏长"倾向,不说"5天/6天"这种具体数。
@@ -516,13 +516,12 @@ def tarot_draw_custom(req: CustomDrawReq):
     counts = req.counts or []
     per = None
     if counts and len(counts) == len(positions) and len(positions) > 0:
-        # 每个位置可抽多张:counts[i]=该位置张数
-        per = [max(1, min(int(x), 20)) for x in counts]
+        # 每个位置可抽多张:counts[i]=该位置张数(至少3张)
+        per = [max(3, min(int(x), 20)) for x in counts]
         n = max(1, min(sum(per), 78))
     elif positions and not counts:
-        # 前端未传 counts 时按同一规则补默认:位置<=3→每位置3张(构成完整故事),位置多→每位置1张
-        d = 3 if len(positions) <= 3 else 1
-        per = [d] * len(positions)
+        # 前端未传 counts 时按同一规则补默认:每位置3张
+        per = [3] * len(positions)
         n = max(1, min(sum(per), 78))
     else:
         n = max(1, min(int(req.count), 78))
@@ -1632,11 +1631,10 @@ async function genSpread(){
   finally{ btn.textContent = "✨ AI牌阵"; btn.disabled = false; }
 }
 
-// 每位置默认张数：位置少(<=3)默认3张(构成"起点-现况-方向"完整故事)，位置多默认1张(避免总牌数爆炸、
-// 也避免单张解不出脉络)。依据:塔罗圈共识"三张是一条线",单张只有孤立判断。
+// 每位置默认张数:每位置至少3张。依据:塔罗圈共识"三张是一条线"(有起点/现况/方向,构成完整故事),
+// 单张只有孤立判断;同一位置3张可相互印证/补充,解读才有厚度。
 function defaultCounts(n){
-  const per = n <= 3 ? 3 : 1;
-  return Array.from({length: n}, () => per);
+  return Array.from({length: n}, () => 3);
 }
 
 function renderSpreadEditor(){
@@ -1644,9 +1642,9 @@ function renderSpreadEditor(){
   if(!aiSpread){ el.style.display = "none"; el.innerHTML = ""; return; }
   el.style.display = "block";
   const total = aiSpread.counts.reduce((a,b)=>a+b, 0);
-  let html = '<div class="se-head"><b>'+aiSpread.label+'</b><span>共'+total+'张 · 位置名可改 · 后面数字=该位置抽几张（默认3张，位置多时1张）</span><button onclick="clearSpread()">✕ 清除</button></div>';
+  let html = '<div class="se-head"><b>'+aiSpread.label+'</b><span>共'+total+'张 · 位置名可改 · 后面数字=该位置抽几张（每位置至少3张）</span><button onclick="clearSpread()">✕ 清除</button></div>';
   aiSpread.positions.forEach((p, i) => {
-    html += '<div class="se-row"><span class="se-idx">'+(i+1)+'</span><input class="se-pos" data-i="'+i+'" value="'+String(p).replace(/"/g,"&quot;")+'"><input class="se-cnt" type="number" min="1" max="10" data-i="'+i+'" value="'+aiSpread.counts[i]+'"><span class="se-p">张</span></div>';
+    html += '<div class="se-row"><span class="se-idx">'+(i+1)+'</span><input class="se-pos" data-i="'+i+'" value="'+String(p).replace(/"/g,"&quot;")+'"><input class="se-cnt" type="number" min="3" max="10" data-i="'+i+'" value="'+aiSpread.counts[i]+'"><span class="se-p">张</span></div>';
   });
   el.innerHTML = html;
   el.querySelectorAll(".se-pos").forEach(inp => {
@@ -1655,13 +1653,13 @@ function renderSpreadEditor(){
   el.querySelectorAll(".se-cnt").forEach(inp => {
     inp.oninput = () => {
       let v = parseInt(inp.value, 10);
-      if(isNaN(v) || v < 1) v = 1;
+      if(isNaN(v) || v < 3) v = 3;
       if(v > 10) v = 10;
       inp.value = v;
       aiSpread.counts[parseInt(inp.dataset.i,10)] = v;
       aiSpread.count = aiSpread.counts.reduce((a,b)=>a+b, 0);
       const t = aiSpread.count;
-      el.querySelector(".se-head span").textContent = '共'+t+'张 · 位置名可改 · 后面数字=该位置抽几张（默认3张，位置多时1张）';
+      el.querySelector(".se-head span").textContent = '共'+t+'张 · 位置名可改 · 后面数字=该位置抽几张（每位置至少3张）';
     };
   });
 }
