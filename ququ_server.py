@@ -29,6 +29,7 @@ from fastapi.responses import HTMLResponse, Response, JSONResponse, StreamingRes
 from pydantic import BaseModel
 
 from backend.expert import _chat, discuss_stream
+import divination
 
 SKILL_PATH = "data/reference/ququ_skill.md"
 CHATS_FILE = "data/ququ_chats.json"
@@ -159,6 +160,24 @@ TAROT_PROMPT = """你是大家平时都会找的那种靠谱塔罗师——见�
 9. 全程别加任何免责声明，别装AI。"""
 
 
+DIV_PROMPT = """你是民间实战派的算卦师傅，说话直来直去，一针见血，不会拽文绉绉的术语。
+
+用户会给你他的问题 + 起卦结果（梅花易数/小六壬/六爻），你就像路边摆摊的老师傅一样，直接给结论，说大白话，别讲什么"体用生克、世应比和"这种用户听不懂的词，直接说这事能不能成、为啥、什么时候能成、现在该干嘛。
+
+【三条规矩】
+1. 一上来先给结论：能成/不能成/能成但是要费点劲，别铺垫半天。
+2. 坏消息照实说但不吓人，好消息不吹过头，不哄人也不训人。
+3. 绝对不说"作为AI""仅供参考"这种废话，别装。
+
+【怎么说才像真人】
+1. 别列点、别用标题、别加粗，就像微信聊天一样一段一段说。
+2. 别把卦辞念一遍，就讲跟用户这个问题有关的那点事。
+3. 说到时间就说大白话："最快半个月，慢的话两个月"，别说"应在寅卯日"这种鬼话。
+4. 说到钱就直接报大概区间，别绕。
+5. 最后给一个用户马上就能做的小事，别把话说死，留有余地。
+"""
+
+
 # 用户身份注记：唯一需要知道的前提是"用户是女性"；对方性别以用户说明为准，不预设
 HOST_USER_NOTE = (
     "\n\n【用户身份】当前用户是一位女性。"
@@ -180,6 +199,8 @@ def build_system(mode: str, is_host: bool = False) -> str:
     )
     if mode == "塔罗":
         base = TAROT_PROMPT
+    elif mode in ["梅花易数", "小六壬", "六爻"]:
+        base = DIV_PROMPT
     else:
         skill = load_skill()
         m = MODES.get(mode, MODES["问答"])
@@ -193,13 +214,13 @@ def build_user(mode: str, c: dict, message: str) -> str:
     """拼用户输入。塔罗:以最近一次抽牌消息为"客观锚点"(问题+牌面),再带本卦内的
     追问链,让追问能记住指代(他/这个/那)而不用复述;不喂别的卦的旧结论,避免污染解读。
     其他模式带最近几轮,保持对话连贯但缩短上下文,减少"刻板影响"。"""
-    if mode == "塔罗":
+    if mode in ["塔罗", "梅花易数", "小六壬", "六爻"]:
         msgs = c["messages"][:-1]  # 排除刚 append 的当前 user 消息
         anchor_idx = -1
         for i in range(len(msgs) - 1, -1, -1):
             h = msgs[i]
             t = h.get("content", "")
-            if h.get("role") == "user" and ("抽到的牌" in t or ("牌阵" in t and "抽" in t)):
+            if h.get("role") == "user" and ("抽到的牌" in t or ("牌阵" in t and "抽" in t) or "起卦结果" in t or "摇卦结果" in t):
                 anchor_idx = i
                 break
         parts = []
@@ -526,6 +547,34 @@ def activate(req: ActivateReq):
         "expires_at": c.get("expires_at"),
     }
 
+
+
+# ==================== 东方玄学算卦接口 ====================
+class DivReq(BaseModel):
+    question: str = ""
+    n1: int = 0
+    n2: int = 0
+    n3: int = 0
+
+@app.post("/api/div/meihua")
+def div_meihua(req: DivReq):
+    if req.n1 and req.n2:
+        res = divination.meihua_by_numbers(req.n1, req.n2, req.n3 if req.n3 else None)
+    else:
+        res = divination.meihua_by_time()
+    return res
+
+@app.post("/api/div/xiaoliuren")
+def div_xiaoliuren(req: DivReq):
+    if req.n1 and req.n2 and req.n3:
+        res = divination.xiaoliuren_by_numbers(req.n1, req.n2, req.n3)
+    else:
+        res = divination.xiaoliuren_by_time()
+    return res
+
+@app.post("/api/div/liuyao")
+def div_liuyao(req: DivReq):
+    return divination.liuyao_by_coins()
 
 @app.get("/api/tarot/spreads")
 def tarot_spreads():
@@ -1247,6 +1296,9 @@ body.ishost .hostonly{display:revert}
     <div id="modes">
       <div class="mode on" data-m="问答">对话</div>
       <div class="mode tarot" data-m="塔罗">塔罗</div>
+      <div class="mode" data-m="梅花易数">梅花易数</div>
+      <div class="mode" data-m="小六壬">小六壬</div>
+      <div class="mode" data-m="六爻">六爻</div>
     </div>
     <button class="ghost" onclick="deleteCurrentChat()">🗑 删除</button>
     <span id="deep" style="color:var(--accent);font-size:13px">🧠 深度思考</span>
@@ -1273,6 +1325,20 @@ body.ishost .hostonly{display:revert}
       <input id="customCount" type="number" min="1" max="78" value="3" placeholder="张数" style="display:none;width:70px">
       <button id="genSpread" onclick="genSpread()" title="按你的问题自动设计牌阵">✨ AI牌阵</button>
       <button id="draw" onclick="drawTarot()">🃏 抽牌解读</button>
+    </div>
+    <div id="meihuaRow" style="display:none;gap:6px;align-items:center">
+      <input id="mhN1" type="number" min="1" placeholder="第一个数" style="width:80px">
+      <input id="mhN2" type="number" min="1" placeholder="第二个数" style="width:80px">
+      <button onclick="drawMeihua()" style="background:var(--tarot);color:#fff;border:none;border-radius:14px;padding:10px 16px;font-size:14px;font-weight:600">🌿 梅花起卦</button>
+    </div>
+    <div id="xiaoliurenRow" style="display:none;gap:6px;align-items:center">
+      <input id="xlrN1" type="number" min="1" placeholder="第一个数" style="width:70px">
+      <input id="xlrN2" type="number" min="1" placeholder="第二个数" style="width:70px">
+      <input id="xlrN3" type="number" min="1" placeholder="第三个数" style="width:70px">
+      <button onclick="drawXiaoliuren()" style="background:var(--tarot);color:#fff;border:none;border-radius:14px;padding:10px 16px;font-size:14px;font-weight:600">掐指一算</button>
+    </div>
+    <div id="liuyaoRow" style="display:none;gap:6px;align-items:center">
+      <button onclick="drawLiuyao()" style="background:var(--tarot);color:#fff;border:none;border-radius:14px;padding:10px 16px;font-size:14px;font-weight:600">🪙 摇六爻</button>
     </div>
     <div id="spreadEditor" style="display:none"></div>
     <button id="scriptBtn" class="ghost hostonly" onclick="toggleScript()" title="常用话术一键复制">📋 话术</button>
@@ -1740,6 +1806,62 @@ async function drawTarot(){
   input.value = msg;
 }
 
+// 梅花易数起卦
+async function drawMeihua(){
+  const q = input.value.trim();
+  const n1 = parseInt(document.getElementById("mhN1").value) || 0;
+  const n2 = parseInt(document.getElementById("mhN2").value) || 0;
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = "起卦中…";
+  try{
+    const j = await api("/api/div/meihua", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({question:q, n1:n1, n2:n2})});
+    const box = document.createElement("div");
+    box.className = "msg ai";
+    box.innerHTML = '<div class="body"><b>【本卦】'+j.ben_gua+'</b>：'+j.ben_ci+'<br><b>【变卦】'+j.bian_gua+'</b>：'+j.bian_ci+'<br><b>体卦】'+j.ti+'，【用卦】'+j.yong+'，'+j.dongyao+'<br><b>吉凶】'+j.luck+'：'+j.luck_desc+'<br><b>应期】'+j.yingqi+'</div>';
+    chat.appendChild(box); chat.scrollTop = chat.scrollHeight;
+    const msg = (q ? "我的问题："+q+"\n" : "") + "梅花易数起卦结果：\n本卦："+j.ben_gua+"，变卦："+j.bian_gua+"，体卦："+j.ti+"，用卦："+j.yong+"，"+j.dongyao+"，吉凶："+j.luck+"，"+j.luck_desc+"，应期："+j.yingqi+"\n请结合我的问题，用大白话详细解读，一针见血，不要说术语。";
+    input.value = msg;
+  }catch(e){ toast("起卦失败："+e); }
+  finally{ btn.disabled = false; btn.textContent = "🌿 梅花起卦"; }
+}
+
+// 小六壬起卦
+async function drawXiaoliuren(){
+  const q = input.value.trim();
+  const n1 = parseInt(document.getElementById("xlrN1").value) || 0;
+  const n2 = parseInt(document.getElementById("xlrN2").value) || 0;
+  const n3 = parseInt(document.getElementById("xlrN3").value) || 0;
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = "掐指中…";
+  try{
+    const j = await api("/api/div/xiaoliuren", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({question:q, n1:n1, n2:n2, n3:n3})});
+    const box = document.createElement("div");
+    box.className = "msg ai";
+    box.innerHTML = '<div class="body"><b>【初宫】'+j.r1.name+'</b>：'+j.r1.desc+'<br><b>【中宫】'+j.r2.name+'</b>：'+j.r2.desc+'<br><b>【末宫】'+j.r3.name+'</b>：'+j.r3.desc+'<br><b>最终结果】'+j.final_luck+'：'+j.final_desc+'<br><b>应期】'+j.time+'</div>';
+    chat.appendChild(box); chat.scrollTop = chat.scrollHeight;
+    const msg = (q ? "我的问题："+q+"\n" : "") + "小六壬起卦结果：\n初宫："+j.r1.name+"，中宫："+j.r2.name+"，末宫："+j.r3.name+"，最终结果："+j.final_luck+"，"+j.final_desc+"，应期："+j.time+"\n请结合我的问题，用大白话详细解读，一针见血，不要说术语。";
+    input.value = msg;
+  }catch(e){ toast("起卦失败："+e); }
+  finally{ btn.disabled = false; btn.textContent = "掐指一算"; }
+}
+
+// 六爻摇卦
+async function drawLiuyao(){
+  const q = input.value.trim();
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = "摇卦中…";
+  try{
+    const j = await api("/api/div/liuyao", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({question:q})});
+    const box = document.createElement("div");
+    box.className = "msg ai";
+    box.innerHTML = '<div class="body"><b>【本卦】'+j.ben_gua+'</b>：'+j.ben_ci+'<br><b>【变卦】'+j.bian_gua+'</b>：'+j.bian_ci+'<br><b>'+j.dongyao+'</b><br><b>世应关系】'+j.relation+'：'+j.relation_desc+'</div>';
+    chat.appendChild(box); chat.scrollTop = chat.scrollHeight;
+    const msg = (q ? "我的问题："+q+"\n" : "") + "六爻摇卦结果：\n本卦："+j.ben_gua+"，变卦："+j.bian_gua+"，"+j.dongyao+"，世应关系："+j.relation+"，"+j.relation_desc+"\n请结合我的问题，用大白话详细解读，一针见血，不要说术语。";
+    input.value = msg;
+  }catch(e){ toast("摇卦失败："+e); }
+  finally{ btn.disabled = false; btn.textContent = "🪙 摇六爻"; }
+}
+
 function copyText(t){
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(t).catch(()=>{});
@@ -1840,8 +1962,17 @@ document.querySelectorAll(".mode").forEach(el => {
     el.classList.add("on");
     currentMode = el.dataset.m;
     const isTarot = currentMode === "塔罗";
+    const isMeihua = currentMode === "梅花易数";
+    const isXlr = currentMode === "小六壬";
+    const isLy = currentMode === "六爻";
     document.getElementById("tarotRow").style.display = isTarot ? "flex" : "none";
+    document.getElementById("meihuaRow").style.display = isMeihua ? "flex" : "none";
+    document.getElementById("xiaoliurenRow").style.display = isXlr ? "flex" : "none";
+    document.getElementById("liuyaoRow").style.display = isLy ? "flex" : "none";
     if(isTarot){ toast("塔罗用法：打问题 → 选牌阵 → 点🃏抽牌 → 点发送"); }
+    if(isMeihua){ toast("梅花易数：打问题 → 输两个数字（或留空自动起卦）→ 点🌿起卦 → 点发送"); }
+    if(isXlr){ toast("小六壬：打问题 → 输三个数字（或留空自动起卦）→ 点掐指一算 → 点发送"); }
+    if(isLy){ toast("六爻：打问题 → 点🪙摇卦 → 点发送"); }
   };
 });
 
