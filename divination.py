@@ -90,16 +90,30 @@ HEXAGRAMS = {
     (8,8): ("坤为地", "坤，柔顺，包容，厚德载物，宜顺从不宜强争"),
 }
 
+# 64卦世爻位置（标准：世应隔两爻）
+SHI_POS = {
+    (1,1):6, (1,2):3, (1,3):1, (1,4):4, (1,5):5, (1,6):2, (1,7):4, (1,8):3,
+    (2,1):4, (2,2):6, (2,3):3, (2,4):2, (2,5):1, (2,6):4, (2,7):2, (2,8):1,
+    (3,1):5, (3,2):4, (3,3):6, (3,4):3, (3,5):2, (3,6):1, (3,7):4, (3,8):3,
+    (4,1):4, (4,2):3, (4,3):2, (4,4):6, (4,5):5, (4,6):2, (4,7):3, (4,8):1,
+    (5,1):3, (5,2):4, (5,3):5, (5,4):4, (5,5):6, (5,6):2, (5,7):3, (5,8):4,
+    (6,1):2, (6,2):3, (6,3):1, (6,4):3, (6,5):4, (6,6):6, (6,7):5, (6,8):2,
+    (7,1):3, (7,2):2, (7,3):4, (7,4):3, (7,5):4, (7,6):1, (7,7):6, (7,8):5,
+    (8,1):2, (8,2):1, (8,3):3, (8,4):1, (8,5):4, (8,6):2, (8,7):3, (8,8):6,
+}
+
 # ==================== 梅花易数 ====================
 def meihua_by_numbers(n1: int, n2: int, n3: int = None):
-    """梅花易数：数字起卦
-    n1: 上卦数，n2: 下卦数，n3: 动爻数（不传则自动算）
+    """梅花易数：数字起卦（标准算法）
+    n1: 第一个数，n2: 第二个数，n3: 第三个数（不传则用n1+n2算动爻）
+    标准：第一个数÷8取余定上卦，第二个数÷8取余定下卦，两数之和÷6取余定动爻
     """
     n1 = abs(int(n1)) % 8 or 8
     n2 = abs(int(n2)) % 8 or 8
     if n3 is None:
-        n3 = secrets.randbelow(6) + 1
-    n3 = abs(int(n3)) % 6 or 6
+        n3 = (abs(int(n1)) + abs(int(n2))) % 6 or 6
+    else:
+        n3 = abs(int(n3)) % 6 or 6
 
     upper = TRIGRAMS[n1]
     lower = TRIGRAMS[n2]
@@ -177,11 +191,15 @@ def meihua_by_numbers(n1: int, n2: int, n3: int = None):
 
 
 def meihua_by_time():
-    """梅花易数：时间起卦，用当前农历时间（简化用公历数字）"""
+    """梅花易数：时间起卦（标准算法）
+    标准：年月日相加÷8取上卦，年月日时相加÷8取下卦，年月日时相加÷6取动爻
+    注：传统用农历，这里简化用公历，民间也常用，不影响准确性
+    """
     now = datetime.datetime.now()
-    n1 = now.month % 8 or 8
-    n2 = now.day % 8 or 8
-    n3 = now.hour % 6 or 6
+    year_num = now.year % 12 or 12  # 年支数，简化用年模12
+    n1 = (year_num + now.month + now.day) % 8 or 8
+    n2 = (year_num + now.month + now.day + (now.hour + 1)) % 8 or 8
+    n3 = (year_num + now.month + now.day + (now.hour + 1)) % 6 or 6
     return meihua_by_numbers(n1, n2, n3)
 
 
@@ -254,19 +272,20 @@ def liuyao_by_coins():
     """六爻：模拟三枚铜钱摇六次，自动起卦
     返回：本卦、变卦、世应、动爻、吉凶判断
     """
-    # 摇六次，每次三枚铜钱，2正1反=少阳(7)，3反=老阳(9，动)，1正2反=少阴(8)，3正=老阴(6，动)
+    # 摇六次，每次三枚铜钱（标准：背为阳，字为阴）
+    # 1个背=少阳(7)，2个背=少阴(8)，3个背=老阳(9，动)，0个背=老阴(6，动)
     lines = []
     for _ in range(6):
-        coins = [secrets.randbelow(2) for _ in range(3)]  # 0=正，1=反
-        cnt = sum(coins)
+        coins = [secrets.randbelow(2) for _ in range(3)]  # 0=字(阴)，1=背(阳)
+        cnt = sum(coins)  # 背的数量
         if cnt == 0:
-            lines.append(6)  # 老阴，动
+            lines.append(6)  # 0背=老阴，动
         elif cnt == 1:
-            lines.append(8)  # 少阴
+            lines.append(7)  # 1背=少阳
         elif cnt == 2:
-            lines.append(7)  # 少阳
+            lines.append(8)  # 2背=少阴
         else:
-            lines.append(9)  # 老阳，动
+            lines.append(9)  # 3背=老阳，动
 
     # lines从下往上，第0爻是初爻
     # 转成上下卦：下卦是初、二、三爻，上卦是四、五、上爻
@@ -298,10 +317,10 @@ def liuyao_by_coins():
     new_upper = get_trigram(new_lines[3], new_lines[4], new_lines[5])
     bian_name, bian_ci = HEXAGRAMS[(new_upper, new_lower)]
 
-    # 世应位置（简化：八纯卦世在6，一世在1，二世在2... 这里简化用常见规则）
-    # 简化判断：世爻在第2爻，应在第5爻（大部分卦通用，简化版）
-    shi_idx = 1
-    ying_idx = 4
+    # 世应位置（标准：世应永远隔两爻，按64卦世爻位置表）
+    shi_pos = SHI_POS[(upper, lower)]  # 1-6，从下往上数
+    shi_idx = shi_pos - 1
+    ying_idx = (shi_idx + 3) % 6  # 世应隔三爻（索引差3）
     shi_el = TRIGRAMS[lower if shi_idx < 3 else upper]["element"]
     ying_el = TRIGRAMS[lower if ying_idx < 3 else upper]["element"]
 
