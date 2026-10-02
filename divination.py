@@ -102,6 +102,33 @@ SHI_POS = {
     (8,1):2, (8,2):1, (8,3):3, (8,4):1, (8,5):4, (8,6):2, (8,7):3, (8,8):6,
 }
 
+# 八卦纳甲（天干）
+NA_GAN = {1:"甲壬", 2:"丁", 3:"己", 4:"庚", 5:"辛", 6:"戊", 7:"丙", 8:"乙癸"}
+# 八卦纳支（地支，从初爻往上）
+NA_ZHI = {
+    1: ["子","寅","辰","午","申","戌"],  # 乾
+    2: ["巳","卯","丑","亥","酉","未"],  # 兑
+    3: ["卯","丑","亥","酉","未","巳"],  # 离
+    4: ["子","寅","辰","午","申","戌"],  # 震
+    5: ["丑","亥","酉","未","巳","卯"],  # 巽
+    6: ["寅","辰","午","申","戌","子"],  # 坎
+    7: ["辰","午","申","戌","子","寅"],  # 艮
+    8: ["未","巳","卯","丑","亥","酉"],  # 坤
+}
+# 地支五行
+ZHI_WUXING = {"子":"水","丑":"土","寅":"木","卯":"木","辰":"土","巳":"火","午":"火","未":"土","申":"金","酉":"金","戌":"土","亥":"水"}
+# 八卦五行（卦宫五行，用来定六亲）
+GONG_WUXING = {1:"金",2:"金",3:"火",4:"木",5:"木",6:"水",7:"土",8:"土"}
+# 六亲规则：生我者父母，我生者子孙，克我者官鬼，我克者妻财，比和者兄弟
+def get_liugin(gong_wuxing, yao_wuxing):
+    if gong_wuxing == yao_wuxing: return "兄弟"
+    if {"金":"水","水":"木","木":"火","火":"土","土":"金"}[gong_wuxing] == yao_wuxing: return "子孙"
+    if {"金":"土","水":"金","木":"水","火":"木","土":"火"}[gong_wuxing] == yao_wuxing: return "父母"
+    if {"金":"木","水":"火","木":"土","火":"金","土":"水"}[gong_wuxing] == yao_wuxing: return "妻财"
+    return "官鬼"
+# 六神（按日天干排，这里简化用当前日天干，或者按顺序排）
+LIUSHEN = ["青龙","朱雀","勾陈","螣蛇","白虎","玄武"]
+
 # ==================== 梅花易数 ====================
 def meihua_by_numbers(n1: int, n2: int, n3: int = None):
     """梅花易数：数字起卦（标准算法）
@@ -177,10 +204,27 @@ def meihua_by_numbers(n1: int, n2: int, n3: int = None):
     else:
         yingqi = f"凶应：阻碍在{yong_el}当令的时候最明显（木=春季，火=夏天，土=三六九腊月，金=秋天，水=冬天），过了这个时间段就会缓解"
 
+    # 互卦：二三四爻为下互，三四五爻为上互，看中间过程
+    # 本卦的爻从下往上：初爻、二爻、三爻、四爻、五爻、上爻
+    # 下互卦 = 二、三、四爻，上互卦 = 三、四、五爻
+    ben_bin = trigram_bin[n1] + trigram_bin[n2]  # 6位，从上到下？不对，trigram_bin是从上爻到初爻？
+    # 重新来：upper_bin是上卦的三位（上五、四爻），lower_bin是下卦的三位（三、二、初爻）
+    # 完整6爻从下往上：初(lower[2])、二(lower[1])、三(lower[0])、四(upper[2])、五(upper[1])、上(upper[0])
+    yao6 = [lower_bin[2], lower_bin[1], lower_bin[0], upper_bin[2], upper_bin[1], upper_bin[0]]
+    # 下互 = 二、三、四爻 = yao6[1], yao6[2], yao6[3]
+    hu_lower_bin = yao6[1] + yao6[2] + yao6[3]
+    # 上互 = 三、四、五爻 = yao6[2], yao6[3], yao6[4]
+    hu_upper_bin = yao6[2] + yao6[3] + yao6[4]
+    hu_lower = bin_to_trigram[hu_lower_bin]
+    hu_upper = bin_to_trigram[hu_upper_bin]
+    hu_name, hu_ci = HEXAGRAMS[(hu_upper, hu_lower)]
+
     return {
         "method": "梅花易数",
         "ben_gua": hex_name,
         "ben_ci": hex_ci,
+        "hu_gua": hu_name,
+        "hu_ci": hu_ci,
         "bian_gua": bian_name,
         "bian_ci": bian_ci,
         "ti": ti["name"],
@@ -337,6 +381,36 @@ def liuyao_by_coins():
     else:
         relation = "世应比和"
 
+    # 完整排盘：纳甲+六亲+六神
+    gong_wuxing = GONG_WUXING[upper]  # 上卦为卦宫？不对，八宫卦的宫位，简化用上卦五行作为宫五行
+    # 排每个爻的信息
+    yao_info = []
+    for i in range(6):
+        idx = 5 - i  # 从上爻到初爻？不，lines[0]是初爻，NA_ZHI[0]也是初爻
+        zhi = NA_ZHI[upper if i >= 3 else lower][i]  # i=0初爻在下卦，i=3四爻在上卦
+        gan = NA_GAN[upper if i >= 3 else lower]
+        # 天干取第一个或者第二个，简化取第一个字
+        gan_char = gan[0] if i < 3 else gan[-1]
+        yao_wuxing = ZHI_WUXING[zhi]
+        liugin = get_liugin(gong_wuxing, yao_wuxing)
+        liushen = LIUSHEN[i % 6]  # 简化按顺序排六神
+        is_dong = (i+1) in dong
+        yao_type = "阳" if lines[i] in [7,9] else "阴"
+        yao_info.append({
+            "pos": i+1,
+            "type": yao_type,
+            "gan": gan_char,
+            "zhi": zhi,
+            "wuxing": yao_wuxing,
+            "liugin": liugin,
+            "liushen": liushen,
+            "is_dong": is_dong,
+        })
+
+    # 世应位置
+    shi_pos = SHI_POS[(upper, lower)]
+    ying_pos = (shi_pos + 2) % 6 + 1  # 世应隔两爻
+
     return {
         "method": "六爻",
         "ben_gua": ben_name,
@@ -346,5 +420,8 @@ def liuyao_by_coins():
         "dongyao": f"第{','.join(map(str, dong))}爻动" if dong else "无动爻",
         "relation": relation,
         "relation_desc": LIUYAO_LUCK[relation],
+        "shi_pos": shi_pos,
+        "ying_pos": ying_pos,
+        "yao_info": yao_info,
         "lines": lines,
     }
