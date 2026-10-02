@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """曲曲 + 塔罗 · 双人格 AI 顾问平台(网页版)。
 
 运行: python ququ_server.py  →  浏览器打开 http://127.0.0.1:8001
@@ -736,7 +736,7 @@ def send(cid: str, req: SendReq):
     user = build_user(req.mode, c, req.message)
 
     try:
-        content, reasoning = _chat(system, user, max_tokens=32768, reasoning_effort="high")
+        content, reasoning = _chat(system, user, max_tokens=8192, reasoning_effort="low", model="deepseek-v4-flash")
         content = content.strip()
     except Exception as e:  # noqa: BLE001
         content, reasoning = f"[出错] {e}", ""
@@ -770,7 +770,7 @@ def send_stream(cid: str, req: SendReq):
     def gen():
         full: list[str] = []
         try:
-            for chunk in discuss_stream(system, user, max_tokens=32768, reasoning_effort="high"):
+            for chunk in discuss_stream(system, user, max_tokens=8192, reasoning_effort="low", model="deepseek-v4-flash"):
                 kind = chunk["kind"]
                 delta = chunk["delta"]
                 if kind == "thinking":
@@ -784,7 +784,7 @@ def send_stream(cid: str, req: SendReq):
         # 深度思考偶尔会耗尽预算导致正文为空:补一次轻思考调用,保证正文有字
         if not content:
             try:
-                content, _ = _chat(system, user, max_tokens=16384, reasoning_effort="low")
+                content, _ = _chat(system, user, max_tokens=8192, reasoning_effort="low", model="deepseek-v4-flash")
                 content = content.strip()
                 if content:
                     yield f"data: {json.dumps({'kind': 'text', 'delta': content}, ensure_ascii=False)}\n\n"
@@ -998,7 +998,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>曲曲 + 塔罗 · AI 顾问</title>
 <style>
-:root{--bg:#0f1115;--panel:#171a21;--line:#262b36;--txt:#e8e6e3;--sub:#8b91a0;--accent:#d4a0ff;--tarot:#5bd0c8;--me:#2c3547;}
+:root{--bg:#FFF5F7;--panel:#FFEFF4;--line:#F8D7E0;--txt:#4A333D;--sub:#B88A9A;--accent:#FF8FB1;--tarot:#F46792;--me:#FFD6E2;}
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--txt);height:100vh;height:100dvh;display:flex;overflow:hidden}
 #side{width:250px;min-width:250px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column}
@@ -1007,8 +1007,8 @@ body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-ser
 #side .cat{padding:10px 14px 4px;font-size:12px;color:var(--sub)}
 #side .list{flex:1;overflow-y:auto;padding:0 8px 8px}
 .chatrow{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--txt)}
-.chatrow:hover{background:#20242e}
-.chatrow.on{background:#2a3040}
+.chatrow:hover{background:#FFE4EC}
+.chatrow.on{background:#FFD6E2}
 .chatrow .t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chatrow .x{color:var(--sub);cursor:pointer;padding:0 4px;display:none}
 .chatrow:hover .x{display:block}
@@ -1020,34 +1020,34 @@ header .title{font-size:16px;font-weight:600}
 .mode.on{background:var(--accent);color:#17121f;border-color:var(--accent);font-weight:600}
 .mode.tarot.on{background:var(--tarot);color:#0d1f1e;border-color:var(--tarot)}
 #deep{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--sub);cursor:pointer;user-select:none}
-#deep .box{width:34px;height:18px;border-radius:10px;background:#333;position:relative;transition:.2s}
+#deep .box{width:34px;height:18px;border-radius:10px;background:#E8C5D0;position:relative;transition:.2s}
 #deep.on .box{background:var(--accent)}
 #deep .box::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s}
 #deep.on .box::after{left:18px}
 #chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
-.msg{max-width:84%;padding:10px 14px;border-radius:14px;line-height:1.65;font-size:15px;white-space:pre-wrap}
-.msg.user{align-self:flex-end;background:var(--me);border-bottom-right-radius:4px}
-.msg.ai{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg{max-width:84%;padding:12px 16px;border-radius:18px;line-height:1.7;font-size:15px;white-space:pre-wrap;box-shadow:0 2px 8px rgba(255,143,177,.08)}
+.msg.user{align-self:flex-end;background:var(--me);border-bottom-right-radius:6px}
+.msg.ai{align-self:flex-start;background:#FFFFFF;border:1px solid var(--line);border-bottom-left-radius:6px}
 .msg .tools{margin-top:6px;display:flex;gap:10px}
 .msg .speak{color:var(--accent);cursor:pointer;font-size:13px;user-select:none}
 .msg details{margin-top:8px;border-top:1px dashed var(--line);padding-top:6px}
 .msg details summary{cursor:pointer;color:var(--sub);font-size:13px}
 .msg details .think{color:var(--sub);font-size:13px;white-space:pre-wrap;margin-top:6px}
 .cards{display:flex;gap:8px;margin:6px 0;flex-wrap:wrap}
-.card{background:#1d222d;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;text-align:center;min-width:92px}
+.card{background:#FFFFFF;border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:13px;text-align:center;min-width:92px;box-shadow:0 2px 8px rgba(255,143,177,.1)}
 .card .pos{color:var(--sub);font-size:11px}
 .card .nm{font-weight:600}
 .card .or{color:var(--tarot);font-size:12px}
 #inputbar{display:flex;gap:8px;padding:12px 16px calc(12px + env(safe-area-inset-bottom, 0px));border-top:1px solid var(--line);background:var(--panel);align-items:center;flex-wrap:wrap}
-#input{flex:1;min-width:0;background:var(--bg);border:1.5px solid #4a5263;border-radius:10px;padding:11px 14px;color:var(--txt);font-size:15px;outline:none}
+#input{flex:1;min-width:0;background:#FFFFFF;border:1.5px solid var(--line);border-radius:14px;padding:12px 16px;color:var(--txt);font-size:15px;outline:none;transition:.2s}
 #input:focus{border-color:var(--accent)}
 button{cursor:pointer}
-#send{flex-shrink:0;background:var(--accent);color:#17121f;border:none;border-radius:10px;padding:11px 16px;font-size:15px;font-weight:600}
+#send{flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:14px;padding:12px 20px;font-size:15px;font-weight:600;box-shadow:0 2px 8px rgba(255,143,177,.3)}
 button.ghost{background:transparent;border:1px solid var(--line);color:var(--sub);border-radius:10px;padding:10px 12px;font-size:15px}
 #tarotRow{display:none;gap:6px;align-items:center}
 #spread{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--txt);font-size:14px;outline:none}
-#draw{background:var(--tarot);color:#0d1f1e;border:none;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:600}
-#genSpread{background:#2a3140;color:var(--accent);border:1px solid var(--accent);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;white-space:nowrap}
+#draw{background:var(--tarot);color:#fff;border:none;border-radius:14px;padding:10px 16px;font-size:14px;font-weight:600;box-shadow:0 2px 8px rgba(244,103,146,.3)}
+#genSpread{background:#fff;color:var(--accent);border:1px solid var(--accent);border-radius:14px;padding:10px 14px;font-size:14px;font-weight:600;white-space:nowrap}
 #spreadEditor{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:6px}
 .se-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:14px}
 .se-head b{color:var(--tarot)}
@@ -1067,9 +1067,9 @@ button.ghost{background:transparent;border:1px solid var(--line);color:var(--sub
 #overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:16px;padding:24px}
 #overlay h2{margin:0;font-size:22px}
 #overlay .sub{color:var(--sub);font-size:14px;text-align:center;line-height:1.7;max-width:420px}
-#overlay input{width:300px;max-width:80vw;padding:13px 16px;border-radius:10px;border:1px solid var(--line);background:#0a0c10;color:var(--txt);font-size:16px;text-align:center;letter-spacing:2px;outline:none;text-transform:uppercase}
+#overlay input{width:300px;max-width:80vw;padding:14px 18px;border-radius:14px;border:1px solid var(--line);background:#FFFFFF;color:var(--txt);font-size:16px;text-align:center;letter-spacing:2px;outline:none}
 #overlay input:focus{border-color:var(--accent)}
-#overlay button{padding:12px 40px;border-radius:10px;border:none;background:var(--accent);color:#17121f;font-size:15px;font-weight:600;cursor:pointer}
+#overlay button{padding:13px 44px;border-radius:14px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(255,143,177,.3)}
 #overlay .err{color:#ff6b6b;font-size:13px;min-height:18px}
 #quota{margin-left:auto;font-size:13px;color:var(--tarot);white-space:nowrap}
 #adminLink{margin-left:auto;font-size:13px;color:var(--sub);cursor:pointer;text-decoration:none}
@@ -1092,7 +1092,7 @@ button.ghost{background:transparent;border:1px solid var(--line);color:var(--sub
 .hostonly{display:none !important}
 body.ishost .hostonly{display:revert}
 #helpOverlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
-.helpbox{background:#14181f;border:1px solid var(--line);border-radius:14px;max-width:520px;width:100%;padding:22px;max-height:82vh;overflow:auto}
+.helpbox{background:#FFFFFF;border:1px solid var(--line);border-radius:20px;max-width:520px;width:100%;padding:24px;max-height:82vh;overflow:auto;box-shadow:0 4px 20px rgba(255,143,177,.15)}
 .helpsection{border-bottom:1px solid var(--line);padding:10px 0}
 .helptitle{font-weight:700;color:var(--accent);margin-bottom:6px;font-size:14px}
 .helpline{font-size:13px;line-height:1.7;color:var(--txt);margin:3px 0}
@@ -1695,7 +1695,7 @@ async function drawTarot(){
   chat.appendChild(box); chat.scrollTop = chat.scrollHeight;
   // 组装解读请求
   const cardDesc = j.cards.map(c => c.position+'. '+c.name+'（'+(c.reversed?'逆位':'正位')+'）').join('\n');
-  const msg = (q ? "我的问题："+q+"\n" : "") + "牌阵："+j.spread+"\n抽到的牌：\n"+cardDesc+"\n请按量化解读规则解读。";
+  const msg = (q ? "我的问题："+q+"\n" : "") + "牌阵："+j.spread+"\n抽到的牌：\n"+cardDesc+"";
   input.value = msg;
 }
 
@@ -1890,7 +1890,7 @@ ADMIN_HTML = r"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>邀请码管理</title>
 <style>
-:root{--bg:#0f1115;--panel:#171a21;--line:#262b36;--txt:#e8e6e3;--sub:#8b91a0;--accent:#d4a0ff;--tarot:#5bd0c8}
+:root{--bg:#FFF5F7;--panel:#FFFFFF;--line:#F8D7E0;--txt:#4A333D;--sub:#B88A9A;--accent:#FF8FB1;--tarot:#F46792}
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
 .admin-wrap{max-width:760px;margin:0 auto;padding:28px 20px}
