@@ -119,13 +119,15 @@ def meihua_by_numbers(n1: int, n2: int, n3: int = None):
     lower = TRIGRAMS[n2]
     hex_name, hex_ci = HEXAGRAMS[(n1, n2)]
 
-    # 体用：动爻在上卦则上卦为用，下卦为体；反之亦然
+    # 体用：动爻所在的卦为用卦，另一卦为体卦（标准规则）
+    # 动爻在1-3爻（下卦）→ 下卦为用，上卦为体
+    # 动爻在4-6爻（上卦）→ 上卦为用，下卦为体
     if n3 <= 3:
-        ti = lower
-        yong = upper
-    else:
         ti = upper
         yong = lower
+    else:
+        ti = lower
+        yong = upper
 
     # 体用生克判断吉凶
     ti_el = ti["element"]
