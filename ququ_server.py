@@ -160,21 +160,24 @@ TAROT_PROMPT = """你是大家平时都会找的那种靠谱塔罗师——见�
 9. 全程别加任何免责声明，别装AI。"""
 
 
-DIV_PROMPT = """你是民间实战派的算卦师傅，说话直来直去，一针见血，不会拽文绉绉的术语。
+DIV_PROMPT = """你是有十几年经验的民间实战派算卦师傅，说话直来直去，一针见血，有真本事，不会拽文绉绉的术语糊弄人。
 
-用户会给你他的问题 + 起卦结果（梅花易数/小六壬/六爻），你就像路边摆摊的老师傅一样，直接给结论，说大白话，别讲什么"体用生克、世应比和"这种用户听不懂的词，直接说这事能不能成、为啥、什么时候能成、现在该干嘛。
+用户会给你他的问题 + 完整的起卦结果（梅花易数带本卦/互卦/变卦/体用，六爻带完整纳甲/六亲/六神/世应/动爻排盘），你要真的根据卦象来断，不是瞎编。
 
-【三条规矩】
-1. 一上来先给结论：能成/不能成/能成但是要费点劲，别铺垫半天。
-2. 坏消息照实说但不吓人，好消息不吹过头，不哄人也不训人。
-3. 绝对不说"作为AI""仅供参考"这种废话，别装。
+【核心要求】
+1. 一上来先给结论：能成/不能成/能成但是要费点劲，别铺垫半天绕圈子。
+2. 梅花易数要按「本卦（开始）→互卦（中间过程和隐情）→变卦（最终结果）」的顺序来断，不要只看结果。
+3. 六爻要真的看世应、六亲、六神、动爻、五行生克来断，不是只看卦名，动爻是核心，世爻代表求测人，应爻代表对方/事情。
+4. 坏消息照实说但不吓人，好消息不吹过头，不哄人也不训人，有啥说啥。
+5. 绝对不说"作为AI""仅供参考"这种废话，别装。
 
-【怎么说才像真人】
-1. 别列点、别用标题、别加粗，就像微信聊天一样一段一段说。
-2. 别把卦辞念一遍，就讲跟用户这个问题有关的那点事。
-3. 说到时间就说大白话："最快半个月，慢的话两个月"，别说"应在寅卯日"这种鬼话。
+【怎么说才像真人师傅】
+1. 别列点、别用标题、别加粗一大片，就像微信聊天一样一段一段说，自然一点。
+2. 别把卦辞、排盘念一遍，就讲跟用户这个问题有关的那点事，排盘是给你看的，不是给用户念的。
+3. 说到时间就说大白话："最快半个月，慢的话两个月"，别说"应在寅卯日"这种用户听不懂的鬼话。
 4. 说到钱就直接报大概区间，别绕。
-5. 最后给一个用户马上就能做的小事，别把话说死，留有余地。
+5. 中间过程有什么隐情、有什么人在背后搞鬼、有什么你没看到的情况，都可以说，这就是互卦和六神的作用。
+6. 最后给一个用户马上就能做的小事，别把话说死，留有余地，但是结论要明确。
 """
 
 
@@ -1817,9 +1820,9 @@ async function drawMeihua(){
     const j = await api("/api/div/meihua", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({question:q, n1:n1, n2:n2})});
     const box = document.createElement("div");
     box.className = "msg ai";
-    box.innerHTML = '<div class="body"><b>【本卦】'+j.ben_gua+'</b>：'+j.ben_ci+'<br><b>【变卦】'+j.bian_gua+'</b>：'+j.bian_ci+'<br><b>体卦】'+j.ti+'，【用卦】'+j.yong+'，'+j.dongyao+'<br><b>吉凶】'+j.luck+'：'+j.luck_desc+'<br><b>应期】'+j.yingqi+'</div>';
+    box.innerHTML = '<div class="body"><span class="luck-badge luck-'+j.luck+'">'+j.luck+'</span><b>【本卦】'+j.ben_gua+'</b>：'+j.ben_ci+'<br><b>【互卦（中间过程）】'+j.hu_gua+'</b>：'+j.hu_ci+'<br><b>【变卦（最终结果）】'+j.bian_gua+'</b>：'+j.bian_ci+'<br><b>体卦】'+j.ti+'，【用卦】'+j.yong+'，'+j.dongyao+'<br><b>吉凶】'+j.luck_desc+'<br><b>应期】'+j.yingqi+'</div>';
     chat.appendChild(box); chat.scrollTop = chat.scrollHeight;
-    const msg = (q ? "我的问题："+q+"\n" : "") + "梅花易数起卦结果：\n本卦："+j.ben_gua+"，变卦："+j.bian_gua+"，体卦："+j.ti+"，用卦："+j.yong+"，"+j.dongyao+"，吉凶："+j.luck+"，"+j.luck_desc+"，应期："+j.yingqi+"\n请结合我的问题，用大白话详细解读，一针见血，不要说术语。";
+    const msg = (q ? "我的问题："+q+"\n" : "") + "梅花易数起卦结果：\n本卦："+j.ben_gua+"，互卦（中间过程）："+j.hu_gua+"，变卦（最终结果）："+j.bian_gua+"，体卦："+j.ti+"，用卦："+j.yong+"，"+j.dongyao+"，吉凶："+j.luck+"，"+j.luck_desc+"，应期："+j.yingqi+"\n请结合我的问题，按本卦（开始）→互卦（中间过程）→变卦（最终结果）的顺序，用大白话详细解读，一针见血，不要说术语。";
     input.value = msg;
   }catch(e){ toast("起卦失败："+e); }
   finally{ btn.disabled = false; btn.textContent = "🌿 梅花起卦"; }
@@ -1852,11 +1855,22 @@ async function drawLiuyao(){
   btn.disabled = true; btn.textContent = "摇卦中…";
   try{
     const j = await api("/api/div/liuyao", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({question:q})});
+    // 排盘表格，从上爻到初爻
+    let paipan = "";
+    for(let i=5; i>=0; i--){
+        const y = j.yao_info[i];
+        let mark = "";
+        if(y.is_dong) mark = y.type==="阳" ? " ○动" : " ✕动";
+        let shiying = "";
+        if(j.shi_pos === y.pos) shiying = " 【世】";
+        if(j.ying_pos === y.pos) shiying = " 【应】";
+        paipan += y.liushen+" | "+y.liugin+" | "+y.gan+y.zhi+"("+y.wuxing+") | "+y.type+"爻"+mark+shiying+"\n";
+    }
     const box = document.createElement("div");
     box.className = "msg ai";
-    box.innerHTML = '<div class="body"><b>【本卦】'+j.ben_gua+'</b>：'+j.ben_ci+'<br><b>【变卦】'+j.bian_gua+'</b>：'+j.bian_ci+'<br><b>'+j.dongyao+'</b><br><b>世应关系】'+j.relation+'：'+j.relation_desc+'</div>';
+    box.innerHTML = '<div class="body"><b>【本卦】'+j.ben_gua+'</b>：'+j.ben_ci+'<br><b>【变卦】'+j.bian_gua+'</b>：'+j.bian_ci+'<br><b>'+j.dongyao+'，世在第'+j.shi_pos+'爻，应在第'+j.ying_pos+'爻</b><br><pre style="font-size:13px;line-height:1.8;background:#FFF5F7;padding:12px;border-radius:12px;margin:8px 0">六神 | 六亲 | 干支(五行) | 爻\n'+paipan+'</pre><b>世应关系】'+j.relation+'：'+j.relation_desc+'</div>';
     chat.appendChild(box); chat.scrollTop = chat.scrollHeight;
-    const msg = (q ? "我的问题："+q+"\n" : "") + "六爻摇卦结果：\n本卦："+j.ben_gua+"，变卦："+j.bian_gua+"，"+j.dongyao+"，世应关系："+j.relation+"，"+j.relation_desc+"\n请结合我的问题，用大白话详细解读，一针见血，不要说术语。";
+    const msg = (q ? "我的问题："+q+"\n" : "") + "六爻摇卦完整排盘：\n本卦："+j.ben_gua+"，变卦："+j.bian_gua+"，"+j.dongyao+"，世在第"+j.shi_pos+"爻，应在第"+j.ying_pos+"爻\n完整排盘（从上爻到初爻）：\n"+paipan+"\n世应关系："+j.relation+"，"+j.relation_desc+"\n请结合我的问题，根据完整排盘（世应、六亲、六神、动爻、五行生克）用大白话详细解读，一针见血，不要堆砌术语，重点说结论和建议。";
     input.value = msg;
   }catch(e){ toast("摇卦失败："+e); }
   finally{ btn.disabled = false; btn.textContent = "🪙 摇六爻"; }
