@@ -285,7 +285,12 @@ def build_user(mode: str, c: dict, message: str) -> str:
 
 
 def category_of(mode: str) -> str:
-    return "塔罗" if mode == "塔罗" else "曲曲"
+    if mode == "塔罗":
+        return "塔罗"
+    elif mode in ["梅花易数", "小六壬", "六爻"]:
+        return "算卦"
+    else:
+        return "曲曲"
 
 
 def draw_cards(count: int) -> list:
@@ -1366,7 +1371,7 @@ body.ishost .hostonly{display:revert}
       <button id="genSpread" onclick="genSpread()" title="按你的问题自动设计牌阵">✨ AI牌阵</button>
       <button id="draw" onclick="drawTarot()">🃏 抽牌解读</button>
     </div>
-    <div id="meihuaRow" style="display:none;gap:6px;align-items:center">
+    <div id="meihuaRow" style="display:none;gap:6px;align-items:center;width:100%">
       <input id="mhN1" type="number" min="1" placeholder="第一个数" style="width:80px">
       <input id="mhN2" type="number" min="1" placeholder="第二个数" style="width:80px">
       <button onclick="drawMeihua()" style="background:var(--tarot);color:#fff;border:none;border-radius:14px;padding:10px 16px;font-size:14px;font-weight:600">🌿 梅花起卦</button>
