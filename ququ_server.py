@@ -30,6 +30,7 @@ from pydantic import BaseModel
 
 from backend.expert import _chat, discuss_stream
 import divination
+import fortune as fortune_mod
 
 SKILL_PATH = "data/reference/ququ_skill.md"
 CHATS_FILE = "data/ququ_chats.json"
@@ -161,12 +162,15 @@ TAROT_PROMPT = """你是大家平时都会找的那种靠谱塔罗师——见�
 
 【解读直白铁律（必须遵守）】
 1. 第一句话必须直接给结论，别铺垫，别绕弯子，用户问啥就直接答啥。
-2. 每说一个点，都必须结合用户的具体问题，解释清楚"这对你这件事来说意味着什么"，不能泛泛而谈牌义。
+2. 每说一个点，都必须结合用户的具体问题，解释清楚"这对你这件事来说意味着什么"，不能泛泛而谈牌义，要用大白话讲，让用户一听就懂，不要晦涩。
 3. 绝对不说用户听不懂的术语，万一说了也要立刻用大白话解释清楚是什么意思。
 4. 不能讲了半天用户不知道你在说啥，每一段都要让用户能听懂"哦，原来跟我有这个关系"。
 5. 别把牌义念一遍，就讲跟用户这个问题有关的那点事，牌是用来解释他的事的，不是用来科普的。
 6. 【绝对禁止说教】不要自作聪明加"你现在应该去做XX""你当务之急是XX""你要赶快停下来"这种跟牌面无关的人生建议和行动指令，只客观解读牌面显示的内容，不要教育用户，不要预设道德立场，不要站在道德制高点评判，中肯、客观、中立就好。
 7. 不要硬加"最后给你一个小建议"这种环节，牌面里有什么就说什么，没有就不要硬凑，不要为了显得有用而说废话。
+8. 【绝对禁止预设/揣测用户】绝对不要说"你别指望他XX""你就是想XX""你问这么多就是因为XX""你其实是XX心态"这种预设、揣测用户想法、态度、意愿、动机的话，你没有资格揣测用户的内心，只有牌面里明确显示了问卜者的心态（比如有专门代表问卜者想法的牌），你才能说，而且必须说明"从牌面看你现在的心态是XX"，不是你自己猜的。
+9. 【绝对禁止傲慢语气/道德评判】不要用傲慢的语气跟用户说话，不要教育用户，不要站在道德制高点评判用户的行为和想法，你只是一个客观的解读工具，只解读牌面显示的内容，不做任何额外的评判和揣测。
+10. 解读要通俗直白，但是不要改变牌面的核心意思和准确性，在准确的基础上用大白话讲清楚，不要为了通俗而歪曲牌义。
 
 【你的任务】用户会给你：他的问题 + 选的牌阵 + 抽到的牌。你就像真的在帮他看牌一样聊就行。
 
@@ -194,12 +198,15 @@ DIV_PROMPT = """你是有十几年经验的民间实战派算卦师傅，说话�
 
 【解读直白铁律（必须遵守）】
 1. 第一句话必须直接给结论，别铺垫，别绕弯子，用户问啥就直接答啥。
-2. 每说一个点，都必须结合用户的具体问题，解释清楚"这对你这件事来说意味着什么"，不能泛泛而谈卦象。
+2. 每说一个点，都必须结合用户的具体问题，解释清楚"这对你这件事来说意味着什么"，不能泛泛而谈卦象，要用大白话讲，让用户一听就懂，不要晦涩。
 3. 绝对不说用户听不懂的术语（什么体用生克、世应比和、纳甲六亲），万一说了也要立刻用大白话解释清楚是什么意思。
 4. 不能讲了半天用户不知道你在说啥，每一段都要让用户能听懂"哦，原来跟我有这个关系"。
 5. 别把卦辞、排盘念一遍，排盘是给你看的，不是给用户念的，就讲跟用户这个问题有关的那点事。
 6. 【绝对禁止说教】不要自作聪明加"你现在应该去做XX""你当务之急是XX""你要赶快停下来"这种跟卦象无关的人生建议和行动指令，只客观解读卦象显示的内容，不要教育用户，不要预设道德立场，不要站在道德制高点评判，中肯、客观、中立就好。
 7. 不要硬加"最后给你一个小建议"这种环节，卦象里有什么就说什么，没有就不要硬凑，不要为了显得有用而说废话。
+8. 【绝对禁止预设/揣测用户】绝对不要说"你别指望他XX""你就是想XX""你问这么多就是因为XX""你其实是XX心态"这种预设、揣测用户想法、态度、意愿、动机的话，你没有资格揣测用户的内心，只有卦象里明确显示了问卜者的心态（比如世爻代表问卜者，世爻的状态明确显示了心态），你才能说，而且必须说明"从卦象看你现在的心态是XX"，不是你自己猜的。
+9. 【绝对禁止傲慢语气/道德评判】不要用傲慢的语气跟用户说话，不要教育用户，不要站在道德制高点评判用户的行为和想法，你只是一个客观的解读工具，只解读卦象显示的内容，不做任何额外的评判和揣测。
+10. 解读要通俗直白，但是不要改变卦象的核心意思和准确性，在准确的基础上用大白话讲清楚，不要为了通俗而歪曲卦义。
 
 【核心要求】
 1. 一上来先给结论：能成/不能成/能成但是要费点劲，别铺垫半天绕圈子。
@@ -216,6 +223,61 @@ DIV_PROMPT = """你是有十几年经验的民间实战派算卦师傅，说话�
 5. 中间过程有什么隐情、有什么人在背后搞鬼、有什么你没看到的情况，都可以说，这就是互卦和六神的作用。
 6. 别把话说死，留有余地，但是结论要明确，不要硬加行动建议，不要说教。
 """
+
+FORTUNE_PROMPT = """你是干了十几年的实战派老命理师，八字、西方占星、黄历三样都通，见过的盘比你吃过的米多。说话直来直去，不故弄玄虚，大白话但不粗俗，直接但不极端。
+
+用户会给你他的出生信息 + 完整排盘数据（八字原局/大运/流年流月流日、西方占星本命盘/日返盘/次限盘、当日黄历宜忌冲煞方位），还有他的具体问题。你要真的对着这些数据断，不是瞎编。
+
+【解读直白铁律（必须遵守）】
+1. 第一句话必须直接给结论，别铺垫，别绕弯子，用户问啥就直接答啥。
+2. 每说一个点，都必须结合用户的具体问题，用大白话解释清楚"这对你这件事来说意味着什么"，不能泛泛而谈排盘。要通俗直白，但不能为了通俗歪曲盘象/八字的核心意思和准确性，先看准、再说明白。
+3. 绝对不说用户听不懂的术语（什么日主强弱、十神、刑冲合害、上升星座、宫位相位），万一说了也要立刻用大白话解释清楚是什么意思。
+4. 不能讲了半天用户不知道你在说啥，每一段都要让用户能听懂"哦，原来跟我有这个关系"。
+5. 别把排盘念一遍，排盘是给你看的，不是给用户念的，就讲跟用户这个问题有关的那点事。
+6. 【绝对禁止预设/揣测用户】绝对不要说"你别指望他XX""你就是想XX""你问这么多就是因为XX""你其实是XX心态""你不甘心""你还抱着幻想""你就是放不下"这种预设、揣测用户想法、态度、意愿、动机、心态的话。你没有资格揣测用户的内心。只有盘象/八字里明确显示了问卜者当下的心态，你才能说，而且必须带上出处："从盘象/八字看，你现在的心态是XX"，这是盘显示的，不是你猜的。盘里没显示的，一律不替用户下判断。
+7. 【绝对禁止傲慢语气和道德评判】不要用傲慢的语气跟用户说话，不要教育用户，不要站在道德制高点评判用户的行为和想法。你只是一个客观的解读工具，只解读盘象/八字显示的内容，不做任何额外的评判和揣测，不中肯、不居高临下、不替用户觉得他该怎么样。
+8. 【绝对禁止说教】不要自作聪明加"你现在应该去做XX""你当务之急是XX""你要赶快停下来"这种跟盘象无关的人生建议和行动指令，只客观解读盘象显示的内容，不要教育用户，不要预设道德立场，不要站在道德制高点评判，中肯、客观、中立就好。
+9. 不要硬加"最后给你一个小建议"这种环节，盘里有什么就说什么，没有就不要硬凑，不要为了显得有用而说废话。
+10. 坏消息照实说但不吓人，好消息不吹过头，不哄人也不训人。不因为用户想听好话就把差运粉饰成"先苦后甜"，也不因为想听坏消息就吓唬人。
+11. 绝对不说"作为AI""仅供参考""命运掌握在自己手中""希望对你有帮助"这种废话，别装，别灌鸡汤，别喊宝子家人们。
+
+【三盘合参的底层逻辑】
+1. 八字定应期、定十年基调：命局定性，大运定势，流年定应。大运管十年上坡还是下坡，流年只是这十年里哪一年具体应事，别把流年当成"换一年就翻天"。
+2. 星盘定心理、定关系、定主题：本命盘看这个人骨子里什么样、钱从哪类事来、容易被什么样的人吸引；日返盘定今年主旋律；次限盘看这一两年内心变化；比较盘/组合盘看两个人怎么互相触发、关系本身长什么样。注意：星盘看的是"盘里这个配置倾向于怎么待人接物"，不是替用户本人下"你就是这种人"的判断。
+3. 黄历定吉日吉时：短周期（日运月运）黄历占比要重，宜忌、冲煞、喜神财神方位是核心抓手；长周期（年运大运）黄历退居参考。
+4. 每一个结论都要能说出"根据哪张盘哪条数据"：比如"根据你今年日返盘太阳落第2宫，今年主题是搞钱"，而不是凭空说"你今年财运不错"。
+5. 必须落应期：财运感情事业都要说清楚大概哪个月、哪个时间段，说不清就明说"这步运是长期基调，具体应期看流年"。
+
+【各问题类型解读要点】
+- 日运/今日：开头直接给今天几分吉几分凶，然后说今天宜干啥、忌干啥、财神喜神朝哪、哪个时辰顺，干脆利落。
+- 月运/年运：先给整体吉凶结论，再分事业/财运/感情/健康说哪块顺哪块卡，落到具体月份。
+- 财运：必须分清正财（上班工资/稳定收入）和偏财（投资/意外之财/别人给的钱），说清楚是零花钱级别还是一笔大钱；流年走劫财比劫夺财，就把这个配置的风险点说清楚（钱容易被分走、不宜外借合伙），这是盘显示的，不是替用户拿主意。
+- 感情/桃花：说清楚这波桃花是正缘信号还是烂桃花，大概什么时候出现；涉及对方的问题（他爱不爱我、怎么让他爱上我）必须看比较盘/组合盘，按盘里的相位和宫位如实说，对方在抽成就直说在抽身，别为了哄人说反话，也别替用户断言"你就是还爱他"。
+- 事业：说清楚升职跳槽的窗口在哪步运哪个流年，有没有小人是非。
+- 健康：哪个五行被冲克就说对应的脏腑那段时间重点养，别吓唬人。
+- 怎么转运/趋吉避凶：只给跟这个问题直接相关的2到3条具体动作，比如"这个月别借钱出去""谈事坐南朝北""面试约在上午9到11点"，不要把五行方位时间化煞全倒出来。
+
+【正反例（照这个边界说，别越界）】
+❌ 错误："你问这么多就是因为你不甘心，你就是还想跟他和好"
+✅ 正确："从八字看，你今年流年走比劫，比劫代表竞争和较劲，这步运里你在感情上容易有跟人较劲的心态"
+
+❌ 错误："你别指望他会为你花钱，他那种人就是自私"
+✅ 正确："从比较盘看，他的金星落在你的8宫，8宫主偏财和他人资源，这个位置说明他在钱上对你是有算计的，不是大方的类型"
+
+❌ 错误："你现在应该立刻跟他分手，这种人不值得"
+✅ 正确："从组合盘看，关系的核心问题是太阳刑土星，代表长期压力和责任不对等，这段关系走下去会越来越累"
+
+❌ 错误："你就是太缺乏安全感了，所以才反复确认他爱不爱你"
+✅ 正确："从次限盘看，月亮这两年走到你的四宫，四宫主内在安全感，这段时间你内心容易没有着落，想从关系里要确定感"
+
+【怎么说才像真人师傅】
+1. 别列点、别用标题、别加粗一大片，就像微信聊天一样一段一段说，自然一点。
+2. 别把排盘念一遍，就讲跟用户这个问题有关的那点事，排盘是给你看的，不是给用户念的。
+3. 说到时间就说大白话："最快半个月，慢的话两个月""今年秋天那两个月最顺"，别说"应在寅卯日"这种用户听不懂的鬼话。
+4. 说到钱就直接报大概区间或量级，别绕。
+5. 坏消息照实说但不吓人，好消息不吹过头，不哄人也不训人。走劫财破财就直说"这两年钱守不住，别瞎投资"，别粉饰成"先苦后甜"。
+6. 别把话说死，留有余地，但是结论要明确，不要硬加行动建议，不要说教，不要揣测用户心里怎么想。
+7. 全程只当一个客观报盘的人：盘上有什么说什么，盘上没有的不替用户脑补、不替他下结论、不评判他这个人。"""
 
 
 # 用户身份注记：唯一需要知道的前提是"用户是女性"；对方性别以用户说明为准，不预设
@@ -241,6 +303,8 @@ def build_system(mode: str, is_host: bool = False) -> str:
         base = TAROT_PROMPT
     elif mode in ["梅花易数", "小六壬", "六爻"]:
         base = DIV_PROMPT
+    elif mode == "运势":
+        base = FORTUNE_PROMPT
     else:
         skill = load_skill()
         m = MODES.get(mode, MODES["问答"])
@@ -254,13 +318,13 @@ def build_user(mode: str, c: dict, message: str) -> str:
     """拼用户输入。塔罗:以最近一次抽牌消息为"客观锚点"(问题+牌面),再带本卦内的
     追问链,让追问能记住指代(他/这个/那)而不用复述;不喂别的卦的旧结论,避免污染解读。
     其他模式带最近几轮,保持对话连贯但缩短上下文,减少"刻板影响"。"""
-    if mode in ["塔罗", "梅花易数", "小六壬", "六爻"]:
+    if mode in ["塔罗", "梅花易数", "小六壬", "六爻", "运势"]:
         msgs = c["messages"][:-1]  # 排除刚 append 的当前 user 消息
         anchor_idx = -1
         for i in range(len(msgs) - 1, -1, -1):
             h = msgs[i]
             t = h.get("content", "")
-            if h.get("role") == "user" and ("抽到的牌" in t or ("牌阵" in t and "抽" in t) or "起卦结果" in t or "摇卦结果" in t):
+            if h.get("role") == "user" and ("抽到的牌" in t or ("牌阵" in t and "抽" in t) or "起卦结果" in t or "摇卦结果" in t or "运势排盘数据" in t):
                 anchor_idx = i
                 break
         parts = []
@@ -289,6 +353,8 @@ def category_of(mode: str) -> str:
         return "塔罗"
     elif mode in ["梅花易数", "小六壬", "六爻"]:
         return "算卦"
+    elif mode == "运势":
+        return "运势"
     else:
         return "曲曲"
 
@@ -620,6 +686,170 @@ def div_xiaoliuren(req: DivReq):
 @app.post("/api/div/liuyao")
 def div_liuyao(req: DivReq):
     return divination.liuyao_by_coins()
+
+
+# ==================== 运势(八字+占星+黄历)接口 ====================
+FORTUNE_TYPE_LABELS = {
+    "day": "今日日运", "month": "本月月运", "year": "今年年运", "custom": "指定时间段运势",
+    "recent": "近期运势", "age_range": "特定年龄段运势", "wealth": "财运", "career": "事业运",
+    "relationship": "感情运", "find_love": "桃花运/找对象", "make_him_love": "怎么让对方爱上我",
+    "make_him_pay": "怎么让对方为我付出", "health": "健康运", "luck_change": "怎么转运",
+    "compatibility": "合婚合盘",
+}
+
+
+class FortuneReq(BaseModel):
+    birth_info: dict = {}
+    fortune_type: str = "day"
+    fortune_params: dict = {}
+    question: str = ""
+    other_birth_info: dict = None
+
+
+def _norm_bi(bi: dict) -> dict:
+    """规范化出生信息:缺省时间补12:00,缺省城市补北京。"""
+    out = dict(bi or {})
+    out["year"] = int(out.get("year") or 1995)
+    out["month"] = int(out.get("month") or 1)
+    out["day"] = int(out.get("day") or 1)
+    try:
+        out["hour"] = int(out.get("hour") if out.get("hour") is not None else 12)
+    except Exception:
+        out["hour"] = 12
+    out["minute"] = int(out.get("minute") or 0)
+    out["gender"] = int(out.get("gender", 1))
+    out["city"] = out.get("city") or "北京"
+    if not out.get("lat"):
+        out["lat"] = 39.9
+    if not out.get("lng"):
+        out["lng"] = 116.4
+    return out
+
+
+def _build_ai_context(data: dict) -> str:
+    """把排盘数据压成可读、AI 可直接解读的文本锚点。"""
+    lines = []
+    bazi = data.get("bazi") or {}
+    natal = bazi.get("natal") or {}
+    fp = natal.get("four_pillars") or {}
+    if fp:
+        lines.append("八字四柱：年柱" + str(fp.get("year", {}).get("ganzhi", "")) +
+                     " 月柱" + str(fp.get("month", {}).get("ganzhi", "")) +
+                     " 日柱" + str(fp.get("day", {}).get("ganzhi", "")) +
+                     " 时柱" + str(fp.get("time", {}).get("ganzhi", "")))
+    if natal.get("day_master"):
+        lines.append("日主：" + str(natal["day_master"]) +
+                     "，五行分布：" + json.dumps(natal.get("wuxing_count", {}), ensure_ascii=False))
+    if natal.get("shishen_gan"):
+        sg = natal["shishen_gan"]
+        lines.append("天干十神：年" + str(sg.get("year", "")) + " 月" + str(sg.get("month", "")) +
+                     " 时" + str(sg.get("time", "")))
+    if natal.get("xunkong"):
+        lines.append("空亡：" + json.dumps(natal["xunkong"], ensure_ascii=False))
+    dy = bazi.get("dayun") or {}
+    if dy.get("dayun_list"):
+        lines.append("大运：" + "，".join(
+            f"{d['ganzhi']}({d['start_age']}-{d['end_age']}岁,{d['start_year']}-{d['end_year']})"
+            for d in dy["dayun_list"][:10]))
+    for key, label in [("liunian", "流年"), ("liuyue", "流月"), ("liuri", "流日")]:
+        node = bazi.get(key)
+        if node:
+            lines.append(label + "：" + json.dumps(node, ensure_ascii=False))
+    astro = data.get("astrology") or {}
+    an = astro.get("natal") or {}
+    if an.get("ascendant"):
+        lines.append("上升星座：" + str(an["ascendant"].get("sign", "")) +
+                     "，天顶：" + str((an.get("mc") or {}).get("sign", "")))
+    if an.get("planets"):
+        ps = [f"{p['name']}{p['sign']}{p['house']}宫" + ("(逆)" if p.get("retrograde") else "")
+              for p in an["planets"]]
+        lines.append("本命行星：" + "，".join(ps))
+    for key, label in [("solar_return", "日返盘"), ("progression", "次限盘")]:
+        node = astro.get(key) or {}
+        if node and node.get("planets"):
+            ps = [f"{p['name']}{p['sign']}{p['house']}宫" for p in node["planets"]]
+            lines.append(label + "：" + "，".join(ps))
+    syn = astro.get("synastry") or {}
+    if syn:
+        lines.append("比较盘评分：" + str(syn.get("score", "")) + " " + str(syn.get("score_desc", "")))
+        if syn.get("key_aspects"):
+            lines.append("主要相位：" + "，".join(
+                f"{a['p1']}{a['aspect']}{a['p2']}" for a in syn["key_aspects"][:10]))
+    comp = data.get("compatibility") or {}
+    if comp:
+        cb = comp.get("bazi") or {}
+        if cb.get("shengxiao_relation"):
+            lines.append("生肖关系：" + str(cb["shengxiao_relation"]))
+    alm = data.get("almanac") or {}
+    if alm.get("yi"):
+        lines.append("今日黄历：宜" + "、".join(alm["yi"][:8]) +
+                     "；忌" + "、".join(alm.get("ji", [])[:8]))
+    if alm.get("chong"):
+        lines.append("冲煞：" + str(alm.get("chong", "")) + "，" + str(alm.get("sha", "")))
+    if alm.get("positions"):
+        lines.append("方位：喜神" + str(alm["positions"].get("xi", "")) +
+                     "，财神" + str(alm["positions"].get("cai", "")) +
+                     "，福神" + str(alm["positions"].get("fu", "")))
+    return "\n".join(lines)
+
+
+def _fortune_data(req: FortuneReq):
+    bi = _norm_bi(req.birth_info)
+    obi = _norm_bi(req.other_birth_info) if req.other_birth_info else None
+    fparams = dict(req.fortune_params or {})
+    if req.fortune_type == "custom":
+        sd = fparams.get("start_date", "")
+        ed = fparams.get("end_date", "")
+        try:
+            if sd:
+                fparams["start_year"] = int(str(sd)[:4])
+            if ed:
+                fparams["end_year"] = int(str(ed)[:4])
+        except Exception:
+            pass
+    data = fortune_mod.get_fortune_data(bi, req.fortune_type, fparams, obi)
+    return bi, obi, data
+
+
+@app.post("/api/fortune/chart")
+def fortune_chart(req: FortuneReq):
+    try:
+        bi, obi, data = _fortune_data(req)
+    except Exception as e:  # noqa: BLE001
+        return JSONResponse({"error": f"排盘失败: {e}"}, status_code=500)
+    return {"ok": True, "data": data, "summary": data.get("data_summary", ""),
+            "ai_context": _build_ai_context(data),
+            "type_label": FORTUNE_TYPE_LABELS.get(req.fortune_type, req.fortune_type)}
+
+
+@app.post("/api/fortune/interpret")
+def fortune_interpret(req: FortuneReq):
+    try:
+        bi, obi, data = _fortune_data(req)
+    except Exception as e:  # noqa: BLE001
+        return JSONResponse({"error": f"排盘失败: {e}"}, status_code=500)
+    q = (req.question or "").strip()
+    label = FORTUNE_TYPE_LABELS.get(req.fortune_type, req.fortune_type)
+    bi_desc = (f"{bi['year']}年{bi['month']}月{bi['day']}日 "
+               f"{bi['hour']:02d}:{bi['minute']:02d} "
+               f"{'男' if bi['gender'] == 1 else '女'} {bi['city']}")
+    user_text = (
+        f"我的出生信息：{bi_desc}\n"
+        f"运势类型：{label}\n"
+        f"我的问题：{q or '看一下' + label}\n\n"
+        f"【本次运势排盘数据(固定依据,请基于这些数据解读,不要编造数据里没有的内容)】\n"
+        + _build_ai_context(data)
+    )
+    try:
+        content, reasoning = _chat(FORTUNE_PROMPT, user_text, max_tokens=8192,
+                                   reasoning_effort="low", model="deepseek-v4-flash")
+        content = (content or "").strip()
+    except Exception as e:  # noqa: BLE001
+        return JSONResponse({"error": f"AI解读失败: {e}"}, status_code=500)
+    return {"ok": True, "data": data, "summary": data.get("data_summary", ""),
+            "type_label": label, "interpretation": content, "reasoning": reasoning}
+
+
 
 @app.get("/api/tarot/spreads")
 def tarot_spreads():
@@ -1334,6 +1564,8 @@ body.ishost .hostonly{display:revert}
   <div class="list" id="list-ququ"></div>
   <div class="cat">塔罗</div>
   <div class="list" id="list-tarot"></div>
+  <div class="cat">运势</div>
+  <div class="list" id="list-fortune"></div>
 </div>
 <div id="main">
   <header>
@@ -1344,6 +1576,7 @@ body.ishost .hostonly{display:revert}
       <div class="mode" data-m="梅花易数">梅花易数</div>
       <div class="mode" data-m="小六壬">小六壬</div>
       <div class="mode" data-m="六爻">六爻</div>
+      <div class="mode" data-m="运势">运势</div>
     </div>
     <button class="ghost" onclick="deleteCurrentChat()">🗑 删除</button>
     <span id="deep" style="color:var(--accent);font-size:13px">🧠 深度思考</span>
@@ -1385,6 +1618,46 @@ body.ishost .hostonly{display:revert}
     <div id="liuyaoRow" style="display:none;gap:6px;align-items:center">
       <button onclick="drawLiuyao()" style="background:var(--tarot);color:#fff;border:none;border-radius:14px;padding:10px 16px;font-size:14px;font-weight:600">🪙 摇六爻</button>
     </div>
+
+    <div id="fortuneRow" style="display:none;flex-direction:column;gap:8px;width:100%;padding:10px;background:var(--bg);border:1px solid var(--line);border-radius:14px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:12px;color:var(--sub)">出生</span>
+        <input id="fbDate" type="date" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--txt);font-size:13px;outline:none">
+        <input id="fbTime" type="time" value="12:00" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--txt);font-size:13px;outline:none">
+        <select id="fbGender" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--txt);font-size:13px;outline:none"><option value="1">男</option><option value="0">女</option></select>
+        <select id="fbCity" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--txt);font-size:13px;outline:none"><option>北京</option><option>上海</option><option>广州</option><option>深圳</option><option>杭州</option><option>成都</option><option>武汉</option><option>西安</option><option>南京</option><option>重庆</option><option>天津</option><option>长沙</option><option>沈阳</option><option>郑州</option><option>济南</option><option>青岛</option><option>厦门</option><option>福州</option><option>昆明</option><option>合肥</option></select>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap" id="fbTimeTypes">
+        <button type="button" data-t="day" class="ftbtn">日运</button>
+        <button type="button" data-t="month" class="ftbtn">月运</button>
+        <button type="button" data-t="year" class="ftbtn">年运</button>
+        <button type="button" data-t="custom" class="ftbtn">自定义</button>
+      </div>
+      <div id="fbRange" style="display:none;gap:6px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--sub)">起止</span>
+        <input id="fbStart" type="date" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--txt);font-size:13px;outline:none">
+        <input id="fbEnd" type="date" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--txt);font-size:13px;outline:none">
+      </div>
+      <div id="fbOther" style="display:none;gap:6px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--sub)">对方出生</span>
+        <input id="fbODate" type="date" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--txt);font-size:13px;outline:none">
+        <input id="fbOTime" type="time" value="12:00" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--txt);font-size:13px;outline:none">
+        <select id="fbOGender" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--txt);font-size:13px;outline:none"><option value="0">女</option><option value="1">男</option></select>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap" id="fbScenes">
+        <button type="button" data-s="recent" class="ftbtn">近期运势</button>
+        <button type="button" data-s="wealth" class="ftbtn">财运</button>
+        <button type="button" data-s="career" class="ftbtn">事业运</button>
+        <button type="button" data-s="relationship" class="ftbtn">感情运</button>
+        <button type="button" data-s="find_love" class="ftbtn">找对象</button>
+        <button type="button" data-s="make_him_love" class="ftbtn">让他爱上我</button>
+        <button type="button" data-s="make_him_pay" class="ftbtn">让他为我付出</button>
+        <button type="button" data-s="health" class="ftbtn">健康运</button>
+        <button type="button" data-s="luck_change" class="ftbtn">怎么转运</button>
+        <button type="button" data-s="compatibility" class="ftbtn">合婚</button>
+      </div>
+      <button type="button" id="fbGo" onclick="viewFortune()" style="background:var(--tarot);color:#fff;border:none;border-radius:14px;padding:10px 16px;font-size:14px;font-weight:600">🔮 查看运势</button>
+    </div>
     <div id="spreadEditor" style="display:none"></div>
     <button id="scriptBtn" class="ghost hostonly" onclick="toggleScript()" title="常用话术一键复制">📋 话术</button>
     <button id="mic" class="ghost" title="点击录音,再点停止">🎤</button>
@@ -1404,7 +1677,7 @@ const chat = document.getElementById("chat");
 const input = document.getElementById("input");
 const mic = document.getElementById("mic");
 
-function catOf(m){ return m === "塔罗" ? "塔罗" : "曲曲"; }
+function catOf(m){ if(m === "塔罗") return "塔罗"; if(m === "运势") return "运势"; return "曲曲"; }
 
 function setQuotaDisplay(info){
   if(!info) return;
@@ -1502,8 +1775,9 @@ async function loadChats(){
   const j = await api("/api/chats?code=" + encodeURIComponent(activeCode));
   document.getElementById("list-ququ").innerHTML = "";
   document.getElementById("list-tarot").innerHTML = "";
+  document.getElementById("list-fortune").innerHTML = "";
   for(const c of j.chats){
-    const wrap = c.category === "塔罗" ? document.getElementById("list-tarot") : document.getElementById("list-ququ");
+    const wrap = c.category === "塔罗" ? document.getElementById("list-tarot") : (c.category === "运势" ? document.getElementById("list-fortune") : document.getElementById("list-ququ"));
     const d = document.createElement("div");
     d.className = "chatrow" + (c.id === currentChatId ? " on" : "");
     const t = document.createElement("span"); t.className = "t"; t.textContent = c.title;
@@ -1925,6 +2199,163 @@ async function drawLiuyao(){
   finally{ btn.disabled = false; btn.textContent = "🪙 摇六爻"; }
 }
 
+
+// ==================== 运势 ====================
+let ftype = "day";
+const F_BTN_CSS = "background:#fff;border:1px solid var(--line);color:var(--txt);border-radius:14px;padding:6px 12px;font-size:13px;cursor:pointer";
+
+function fbMarkSelected(){
+  document.querySelectorAll("#fbTimeTypes .ftbtn, #fbScenes .ftbtn").forEach(b=>{
+    const on = (b.dataset.t === ftype || b.dataset.s === ftype);
+    b.style.cssText = F_BTN_CSS + (on ? ";background:var(--accent);color:#17121f;font-weight:700" : "");
+  });
+}
+
+function fbLoadBirth(){
+  try{
+    const b = JSON.parse(localStorage.getItem("ququ_birth") || "null");
+    if(b){
+      document.getElementById("fbDate").value = b.date || "";
+      document.getElementById("fbTime").value = b.time || "12:00";
+      document.getElementById("fbGender").value = String(b.gender != null ? b.gender : 1);
+      document.getElementById("fbCity").value = b.city || "北京";
+    }
+  }catch(e){}
+}
+function fbSaveBirth(){
+  const b = {
+    date: document.getElementById("fbDate").value,
+    time: document.getElementById("fbTime").value,
+    gender: parseInt(document.getElementById("fbGender").value, 10),
+    city: document.getElementById("fbCity").value
+  };
+  localStorage.setItem("ququ_birth", JSON.stringify(b));
+}
+function fbReadBirth(){
+  fbSaveBirth();
+  const d = document.getElementById("fbDate").value;
+  if(!d){ toast("先填你的出生日期"); return null; }
+  const dt = d.split("-");
+  const t = document.getElementById("fbTime").value || "12:00";
+  const tm = t.split(":");
+  return {
+    year: parseInt(dt[0], 10), month: parseInt(dt[1], 10), day: parseInt(dt[2], 10),
+    hour: parseInt(tm[0], 10), minute: parseInt(tm[1] || "0", 10),
+    gender: parseInt(document.getElementById("fbGender").value, 10),
+    city: document.getElementById("fbCity").value
+  };
+}
+function fbReadOther(){
+  const d = document.getElementById("fbODate").value;
+  if(!d) return null;
+  const dt = d.split("-");
+  const t = document.getElementById("fbOTime").value || "12:00";
+  const tm = t.split(":");
+  return {
+    year: parseInt(dt[0], 10), month: parseInt(dt[1], 10), day: parseInt(dt[2], 10),
+    hour: parseInt(tm[0], 10), minute: parseInt(tm[1] || "0", 10),
+    gender: parseInt(document.getElementById("fbOGender").value, 10),
+    city: document.getElementById("fbCity").value
+  };
+}
+function fbSetupButtons(){
+  document.querySelectorAll("#fbTimeTypes .ftbtn").forEach(b=>{
+    b.style.cssText = F_BTN_CSS;
+    b.onclick = ()=>{
+      ftype = b.dataset.t;
+      fbMarkSelected();
+      document.getElementById("fbRange").style.display = (ftype === "custom") ? "flex" : "none";
+      document.getElementById("fbOther").style.display = "none";
+    };
+  });
+  const qmap = {
+    recent: "看看我接下来1到3个月整体运势怎么样，哪块顺哪块卡",
+    wealth: "我今年财运怎么样，正财偏财分别如何，什么时候进钱，有没有破财风险",
+    career: "我今年事业运怎么样，有没有升职跳槽机会，要注意什么小人",
+    relationship: "我最近感情运怎么样，桃花旺不旺，是正缘还是烂桃花",
+    find_love: "我什么时候能找到对象，大概在哪遇到，对方什么条件",
+    make_him_love: "怎么让我喜欢的人爱上我",
+    make_him_pay: "怎么让对方愿意为我付出、为我花钱",
+    health: "我今年健康运要重点注意什么",
+    luck_change: "我最近运势一般，怎么转运、趋吉避凶",
+    compatibility: "我和他合不合，能不能走到最后"
+  };
+  document.querySelectorAll("#fbScenes .ftbtn").forEach(b=>{
+    b.style.cssText = F_BTN_CSS;
+    b.onclick = ()=>{
+      ftype = b.dataset.s;
+      fbMarkSelected();
+      document.getElementById("fbRange").style.display = "none";
+      const needOther = ["compatibility","relationship","make_him_love","make_him_pay"].indexOf(ftype) >= 0;
+      document.getElementById("fbOther").style.display = needOther ? "flex" : "none";
+      if(qmap[ftype]) input.value = qmap[ftype];
+    };
+  });
+}
+
+async function viewFortune(){
+  const bi = fbReadBirth();
+  if(!bi) return;
+  let obi = fbReadOther();
+  if(ftype === "compatibility" && !obi){ toast("合婚需要填对方出生信息"); return; }
+  const q = input.value.trim();
+  const btn = document.getElementById("fbGo");
+  btn.disabled = true; btn.textContent = "排盘中…";
+  if(!currentChatId){ await newChat(); }
+  try{
+    const fparams = {};
+    if(ftype === "custom"){
+      const sd = document.getElementById("fbStart").value;
+      const ed = document.getElementById("fbEnd").value;
+      if(!sd || !ed){ toast("自定义要选起止日期"); return; }
+      fparams.start_date = sd; fparams.end_date = ed;
+    }
+    const body = {birth_info: bi, fortune_type: ftype, fortune_params: fparams, question: q, other_birth_info: obi};
+    const j = await api("/api/fortune/chart", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
+    if(j.error){ toast("排盘失败：" + j.error); return; }
+    // 排盘摘要卡片
+    const box = document.createElement("div");
+    box.className = "msg ai";
+    let h = "<div class='body'><b>【" + (j.type_label || "运势") + "】</b>";
+    const d = j.data || {};
+    const natal = (d.bazi || {}).natal || {};
+    const fp = natal.four_pillars || {};
+    if(natal.day_master){
+      h += "<br>八字：" + (fp.year ? fp.year.ganzhi : "?") + " / " + (fp.month ? fp.month.ganzhi : "?") +
+           " / " + (fp.day ? fp.day.ganzhi : "?") + " / " + (fp.time ? fp.time.ganzhi : "?") +
+           "（日主" + natal.day_master + "）";
+    }
+    const dy = (d.bazi || {}).dayun || {};
+    if(dy.dayun_list){
+      const yr = new Date().getFullYear();
+      const cur = dy.dayun_list.find(x => x.start_year <= yr && yr <= x.end_year);
+      if(cur) h += "<br>当前大运：" + cur.ganzhi + "（" + cur.start_age + "-" + cur.end_age + "岁）";
+    }
+    const an = (d.astrology || {}).natal || {};
+    if(an.ascendant) h += "<br>上升：" + an.ascendant.sign + "　天顶：" + ((an.mc || {}).sign || "?");
+    const alm = d.almanac || {};
+    if(alm.yi){
+      h += "<br>今日宜：" + alm.yi.slice(0,5).join("、");
+      h += "<br>今日忌：" + (alm.ji || []).slice(0,5).join("、");
+    }
+    if(alm.chong) h += "<br>冲煞：" + alm.chong + "，" + (alm.sha || "");
+    h += "</div>";
+    box.innerHTML = h;
+    chat.appendChild(box); chat.scrollTop = chat.scrollHeight;
+    // 组锚点消息,交给聊天流(FORTUNE_PROMPT)解读,支持后续追问
+    const anchor = (q ? ("我的问题：" + q + "\n") : "") +
+      "出生：" + bi.year + "年" + bi.month + "月" + bi.day + "日 " + bi.hour + ":" + String(bi.minute).padStart(2,"0") +
+      " " + (bi.gender === 1 ? "男" : "女") + " " + bi.city + "\n" +
+      "运势类型：" + (j.type_label || ftype) + "\n" +
+      "【本次运势排盘数据(固定依据,请基于这些数据解读,不要编造数据里没有的内容)】\n" +
+      (j.ai_context || "");
+    input.value = anchor;
+    toast("排盘完成，开始解读…");
+    await send();
+  }catch(e){ toast("运势出错：" + e); }
+  finally{ btn.disabled = false; btn.textContent = "🔮 查看运势"; }
+}
+
 function copyText(t){
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(t).catch(()=>{});
@@ -2028,10 +2459,12 @@ document.querySelectorAll(".mode").forEach(el => {
     const isMeihua = currentMode === "梅花易数";
     const isXlr = currentMode === "小六壬";
     const isLy = currentMode === "六爻";
+    const isFortune = currentMode === "运势";
     document.getElementById("tarotRow").style.display = isTarot ? "flex" : "none";
     document.getElementById("meihuaRow").style.display = isMeihua ? "flex" : "none";
     document.getElementById("xiaoliurenRow").style.display = isXlr ? "flex" : "none";
     document.getElementById("liuyaoRow").style.display = isLy ? "flex" : "none";
+    document.getElementById("fortuneRow").style.display = isFortune ? "flex" : "none";
     if(isTarot){ toast("塔罗用法：打问题 → 选牌阵 → 点🃏抽牌 → 点发送"); }
     if(isMeihua){ toast("梅花易数：打问题 → 输两个数字（或留空自动起卦）→ 点🌿起卦 → 点发送"); }
     if(isXlr){ toast("小六壬：打问题 → 输三个数字（或留空自动起卦）→ 点掐指一算 → 点发送"); }
@@ -2083,6 +2516,9 @@ document.getElementById("mic").onclick = async () => {
   }catch(e){ alert("无法访问麦克风: " + e); }
 };
 
+fbLoadBirth();
+fbSetupButtons();
+fbMarkSelected();
 document.getElementById("send").onclick = send;
 input.addEventListener("keydown", e => { if(e.key === "Enter") send(); });
 
