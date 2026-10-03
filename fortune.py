@@ -543,19 +543,110 @@ def astrology_composite(birth_info_1: Dict, birth_info_2: Dict) -> Dict[str, Any
 
 
 def astrology_lunar_return(birth_info: Dict, target_date: str) -> Dict[str, Any]:
-    """月返盘 (用次限盘近似)"""
-    return astrology_secondary_progression(birth_info, target_date)
-
-
-def astrology_transits(birth_info: Dict, start_date: str, end_date: str) -> Dict[str, Any]:
-    """行运盘 (简化: 返回时间段内次限盘)"""
+    """月返盘 (真实月返: 月亮回归到出生位置)"""
     if not _KER_AVAILABLE:
         return {"error": "kerykeion 不可用"}
     try:
-        # 行运详细计算复杂，简化返回次限盘
-        return astrology_secondary_progression(birth_info, start_date)
+        dt = datetime.strptime(target_date, "%Y-%m-%d")
+        lat, lng = _get_city_coords(birth_info.get("city", ""), birth_info.get("lat", 0), birth_info.get("lng", 0))
+        subj = _make_subj(birth_info)
+        pr = PlanetaryReturnFactory(subject=subj, city=birth_info.get("city", "Beijing"),
+                                     nation="China", lng=lng, lat=lat,
+                                     tz_str="Asia/Shanghai", online=False)
+        lr = pr.next_return_from_year(year=dt.year, return_type="Lunar")
+        return {"type": "lunar_return", "return_date": target_date,
+                "planets": _extract_planets(lr), **_get_angles(lr)}
     except Exception as e:
+        logging.exception("astrology_lunar_return error")
+        return {"error": f"月返盘失败: {e}"}
+
+
+def astrology_transits(birth_info: Dict, target_date: str = "") -> Dict[str, Any]:
+    """行运盘 (目标日期的现实天空星体位置,即过境天空盘)"""
+    if not _KER_AVAILABLE:
+        return {"error": "kerykeion 不可用"}
+    try:
+        if target_date:
+            dt = datetime.strptime(target_date, "%Y-%m-%d")
+        else:
+            dt = datetime.now()
+        lat, lng = _get_city_coords(birth_info.get("city", ""), birth_info.get("lat", 0), birth_info.get("lng", 0))
+        # 以目标日期中午在出生地排一张"天空盘",代表当下过境星体
+        sky = _make_subj({"year": dt.year, "month": dt.month, "day": dt.day,
+                          "hour": 12, "minute": 0, "city": birth_info.get("city", "北京"),
+                          "lat": lat, "lng": lng})
+        natal = _make_subj(birth_info)
+        return {"type": "transits", "target_date": dt.strftime("%Y-%m-%d"),
+                "transit_sky": _extract_planets(sky),
+                "natal_planets": _extract_planets(natal),
+                **_get_angles(sky)}
+    except Exception as e:
+        logging.exception("astrology_transits error")
         return {"error": f"行运盘失败: {e}"}
+
+
+def astrology_tertiary_progression(birth_info: Dict, target_date: str = "") -> Dict[str, Any]:
+    """三限盘 (Tertiary Progression): 出生后每一天对应一个月。
+    偏移天数 = (目标日期 - 出生日期).days / 12.0
+    然后以 tertiary_date 作为出生日期(保持原出生时间/地点)排盘。"""
+    if not _KER_AVAILABLE:
+        return {"error": "kerykeion 不可用"}
+    try:
+        bd = date(birth_info["year"], birth_info["month"], birth_info["day"])
+        if target_date:
+            td = datetime.strptime(target_date, "%Y-%m-%d").date()
+        else:
+            td = datetime.now().date()
+        days_diff = (td - bd).days
+        offset = days_diff / 12.0
+        tert = bd + timedelta(days=offset)
+        subj = _make_subj({"year": tert.year, "month": tert.month, "day": tert.day,
+                           "hour": birth_info["hour"], "minute": birth_info["minute"],
+                           "city": birth_info.get("city", "北京"),
+                           "lat": birth_info.get("lat", 0), "lng": birth_info.get("lng", 0)})
+        return {"type": "tertiary_progression", "target_date": td.strftime("%Y-%m-%d"),
+                "tertiary_chart_date": tert.strftime("%Y-%m-%d"),
+                "planets": _extract_planets(subj), **_get_angles(subj)}
+    except Exception as e:
+        logging.exception("astrology_tertiary_progression error")
+        return {"error": f"三限盘失败: {e}"}
+
+
+def astrology_davison(birth_info_1: Dict, birth_info_2: Dict) -> Dict[str, Any]:
+    """时空盘 (Davison): 两人出生数据的时间+空间中点,看关系最终走向/长期稳定性。"""
+    if not _KER_AVAILABLE:
+        return {"error": "kerykeion 不可用"}
+    try:
+        s1 = _make_subj(birth_info_1)
+        s2 = _make_subj(birth_info_2)
+        dav = CompositeSubjectFactory(first_subject=s1, second_subject=s2).get_davison_composite_subject_model()
+        return {"type": "davison",
+                "person_a": birth_info_1.get("name", "A"),
+                "person_b": birth_info_2.get("name", "B"),
+                "planets": _extract_planets(dav), **_get_angles(dav)}
+    except Exception as e:
+        logging.exception("astrology_davison error")
+        return {"error": f"时空盘失败: {e}"}
+
+
+def astrology_marx(birth_info_1: Dict, birth_info_2: Dict) -> Dict[str, Any]:
+    """马盘 (马克思盘): 计算基础同时空盘(Davison 中点),
+    但解读时分别从 A 和 B 的视角出发,看双方在关系里的真实心理。"""
+    if not _KER_AVAILABLE:
+        return {"error": "kerykeion 不可用"}
+    try:
+        dav = astrology_davison(birth_info_1, birth_info_2)
+        if "error" in dav:
+            return dav
+        dav["type"] = "marx"
+        dav["marx"] = True
+        dav["note"] = ("马盘(基于Davison时间空间中点),解读时分别从双方视角出发: "
+                       f"{birth_info_1.get('name','A')}对{birth_info_2.get('name','B')}的心理、"
+                       f"{birth_info_2.get('name','B')}对{birth_info_1.get('name','A')}的心理。")
+        return dav
+    except Exception as e:
+        logging.exception("astrology_marx error")
+        return {"error": f"马盘失败: {e}"}
 
 
 def astrology_full(birth_info: Dict, target_type: str, target_params: Dict,
@@ -579,6 +670,122 @@ def astrology_full(birth_info: Dict, target_type: str, target_params: Dict,
         result["synastry"] = astrology_synastry(birth_info, other_birth_info)
         result["composite"] = astrology_composite(birth_info, other_birth_info)
     return result
+
+
+# ==================== 批量排盘 (改版新增) ====================
+
+# 盘类型中文标签 (前端/AI 共用)
+CHART_TYPE_LABELS = {
+    "natal": "本命盘", "solar_return": "日返盘", "lunar_return": "月返盘",
+    "secondary": "次限盘", "tertiary": "三限盘", "transits": "行运盘",
+    "synastry": "比较盘", "composite": "组合盘", "davison": "时空盘", "marx": "马盘",
+}
+# 关系盘(需要第二人)
+RELATION_CHARTS = {"synastry", "composite", "davison", "marx"}
+
+
+def astrology_chart_multi(birth_info, chart_types, target_date=None, other_birth_info=None):
+    """批量星盘排盘。chart_types 取 CHART_TYPE_LABELS 的 key。"""
+    now = datetime.now()
+    td = target_date or now.strftime("%Y-%m-%d")
+    try:
+        td_year = datetime.strptime(td, "%Y-%m-%d").year
+    except Exception:
+        td_year = now.year
+    charts = {}
+    labels = {}
+    by, bm, bd = birth_info["year"], birth_info["month"], birth_info["day"]
+    bh, bmi = birth_info["hour"], birth_info["minute"]
+    lat, lng = birth_info.get("lat", 0), birth_info.get("lng", 0)
+    city = birth_info.get("city", "")
+
+    for ct in chart_types:
+        labels[ct] = CHART_TYPE_LABELS.get(ct, ct)
+        try:
+            if ct == "natal":
+                charts[ct] = astrology_natal(by, bm, bd, bh, bmi, lat, lng, city)
+            elif ct == "solar_return":
+                charts[ct] = astrology_solar_return(birth_info, td_year)
+            elif ct == "lunar_return":
+                charts[ct] = astrology_lunar_return(birth_info, td)
+            elif ct == "secondary":
+                charts[ct] = astrology_secondary_progression(birth_info, td)
+            elif ct == "tertiary":
+                charts[ct] = astrology_tertiary_progression(birth_info, td)
+            elif ct == "transits":
+                charts[ct] = astrology_transits(birth_info, td)
+            elif ct in RELATION_CHARTS:
+                if not other_birth_info:
+                    charts[ct] = {"error": "%s需要第二人档案" % CHART_TYPE_LABELS.get(ct, ct)}
+                    continue
+                if ct == "synastry":
+                    charts[ct] = astrology_synastry(birth_info, other_birth_info)
+                elif ct == "composite":
+                    charts[ct] = astrology_composite(birth_info, other_birth_info)
+                elif ct == "davison":
+                    charts[ct] = astrology_davison(birth_info, other_birth_info)
+                elif ct == "marx":
+                    charts[ct] = astrology_marx(birth_info, other_birth_info)
+            else:
+                charts[ct] = {"error": "未知盘类型: " + ct}
+        except Exception as e:
+            logging.exception("chart_multi %s error", ct)
+            charts[ct] = {"error": "%s排盘失败: %s" % (CHART_TYPE_LABELS.get(ct, ct), e)}
+    return {"type": "astrology_chart_multi", "target_date": td,
+            "charts": charts, "labels": labels}
+
+
+# 八字分析类型标签
+BAZI_TYPE_LABELS = {
+    "natal": "八字本命", "dayun": "大运", "liunian": "流年",
+    "liuyue": "流月", "liuri": "流日", "shishen": "十神分析", "wuxing": "五行旺缺",
+}
+
+
+def bazi_analysis_multi(birth_info, analysis_types, target_params=None):
+    """批量八字分析。analysis_types 取 BAZI_TYPE_LABELS 的 key。"""
+    target_params = target_params or {}
+    now = datetime.now()
+    by, bm, bd = birth_info["year"], birth_info["month"], birth_info["day"]
+    bh, bmi = birth_info["hour"], birth_info["minute"]
+    gender = birth_info.get("gender", 1)
+    city = birth_info.get("city", "")
+    ty = int(target_params.get("year", now.year))
+    tm = int(target_params.get("month", now.month))
+
+    results = {}
+    labels = {}
+    for at in analysis_types:
+        labels[at] = BAZI_TYPE_LABELS.get(at, at)
+        try:
+            if at == "natal":
+                results[at] = bazi_chart(by, bm, bd, bh, bmi, gender, city)
+            elif at == "dayun":
+                results[at] = bazi_dayun(by, bm, bd, bh, bmi, gender)
+            elif at == "liunian":
+                results[at] = bazi_liunian(by, bm, bd, bh, bmi, gender, ty - 1, ty + 1)
+            elif at == "liuyue":
+                results[at] = bazi_liuyue(by, bm, bd, bh, bmi, gender, ty)
+            elif at == "liuri":
+                results[at] = bazi_liuri(by, bm, bd, bh, bmi, gender, ty, tm)
+            elif at in ("shishen", "wuxing"):
+                natal = bazi_chart(by, bm, bd, bh, bmi, gender, city)
+                if at == "shishen":
+                    results[at] = {"type": "bazi_shishen",
+                                   "shishen_gan": natal.get("shishen_gan"),
+                                   "shishen_zhi": natal.get("shishen_zhi"),
+                                   "day_master": natal.get("day_master")}
+                else:
+                    results[at] = {"type": "bazi_wuxing",
+                                   "wuxing_count": natal.get("wuxing_count"),
+                                   "day_master": natal.get("day_master")}
+            else:
+                results[at] = {"error": "未知八字类型: " + at}
+        except Exception as e:
+            logging.exception("bazi_multi %s error", at)
+            results[at] = {"error": "%s分析失败: %s" % (BAZI_TYPE_LABELS.get(at, at), e)}
+    return {"type": "bazi_analysis_multi", "year": ty, "month": tm,
+            "results": results, "labels": labels}
 
 
 # ==================== 合婚 ====================
