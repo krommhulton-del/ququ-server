@@ -1,7 +1,12 @@
 fastapi>=0.115
 uvicorn[standard]>=0.30
+sqlalchemy>=2.0
 pydantic>=2.7
 pydantic-settings>=2.3
 openai>=1.40
-edge-tts>=6.1
-python-multipart>=0.0.9
+psutil>=7.0  # 阶段 4:终止任务整树杀(替代 taskkill,跨平台)
+requests>=2.31  # 阶段 5:GitHub 搜索(规划前参考项目)
+langgraph>=1.2  # 阶段 W1:LangGraph 新引擎(状态图 + 检查点)
+langgraph-checkpoint-sqlite>=3.1  # 阶段 W1:AsyncSqliteSaver → SQLite 检查点落盘
+lunar_python>=1.4  # 运势板块:八字排盘+黄历宜忌
+kerykeion>=6.0  # 运势板块:西方占星(本命/返盘/次限/行运/组合盘)
